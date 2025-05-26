@@ -1,0 +1,225 @@
+/* Settings Component Styles */
+.settings-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+  color: var(--text-color);
+}
+
+.settings-container h1 {
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+  color: var(--primary-color);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.5rem;
+}
+
+.settings-section {
+  margin-bottom: 2rem;
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.settings-section h2 {
+  font-size: 1.5rem;
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  color: var(--primary-color);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.5rem;
+}
+
+.setting-item {
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.setting-item label {
+  flex: 1;
+  min-width: 200px;
+  font-weight: 500;
+  margin-right: 1rem;
+}
+
+.setting-item select,
+.setting-item input[type="text"],
+.setting-item input[type="number"] {
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  font-size: 0.9rem;
+}
+
+.setting-item input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+.download-location {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.download-path-input {
+  display: flex;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.download-path-input input {
+  flex: 1;
+  margin-right: 0.5rem;
+}
+
+.keyboard-shortcuts-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.shortcut-row {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+  padding: 0.5rem 0;
+}
+
+.shortcut-label {
+  flex: 1;
+  font-weight: 500;
+}
+
+.shortcut-key {
+  padding: 4px 8px;
+  background-color: var(--key-bg);
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.9rem;
+  color: var(--key-text);
+  text-align: center;
+  min-width: 80px;
+}
+
+.shortcut-info {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-top: 1rem;
+  font-style: italic;
+}
+
+.settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.settings-actions button {
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.settings-actions button:active {
+  transform: translateY(1px);
+}
+
+.save-button {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+}
+
+.save-button:hover {
+  background-color: var(--primary-hover);
+}
+
+.reset-button {
+  background-color: var(--warning-color);
+  color: white;
+  border: none;
+}
+
+.reset-button:hover {
+  background-color: var(--warning-hover);
+}
+
+.cancel-button {
+  background-color: var(--secondary-bg);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+}
+
+.cancel-button:hover {
+  background-color: var(--border-color);
+}
+
+/* CSS Variables for theme support */
+:root {
+  /* Dark theme (default) */
+  --primary-color: #3a86ff;
+  --primary-hover: #2a76ef;
+  --warning-color: #e63946;
+  --warning-hover: #d62936;
+  --text-color: #f1faee;
+  --text-secondary: #a8dadc;
+  --background: #1d3557;
+  --secondary-bg: #2a4162;
+  --card-bg: #2a4162;
+  --border-color: #457b9d;
+  --input-bg: #1d3557;
+  --key-bg: #457b9d;
+  --key-text: #f1faee;
+}
+
+/* Light theme */
+[data-theme="light"] {
+  --primary-color: #3a86ff;
+  --primary-hover: #2a76ef;
+  --warning-color: #e63946;
+  --warning-hover: #d62936;
+  --text-color: #1d3557;
+  --text-secondary: #457b9d;
+  --background: #f1faee;
+  --secondary-bg: #a8dadc;
+  --card-bg: #ffffff;
+  --border-color: #a8dadc;
+  --input-bg: #f1faee;
+  --key-bg: #3a86ff;
+  --key-text: #f1faee;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .settings-container {
+    padding: 10px;
+  }
+  
+  .settings-section {
+    padding: 1rem;
+  }
+  
+  .setting-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .setting-item label {
+    margin-bottom: 0.5rem;
+    margin-right: 0;
+  }
+  
+  .settings-actions {
+    flex-direction: column;
+  }
+  
+  .settings-actions button {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+}
