@@ -9,7 +9,6 @@ import CourseView from './components/Course/CourseView'
 import VideoPlayer from './components/Player/VideoPlayer'
 import ImportCourse from './components/Library/ImportCourse'
 import Settings from './components/Settings/Settings'
-import ElectronTest from './components/ElectronTest'
 
 // Database
 import { CourseManager } from '../js/database'
@@ -105,7 +104,6 @@ function App() {
 
             <Route path='/settings' element={<Settings />} />
 
-            <Route path='/test' element={<ElectronTest />} />
             <Route path='*' element={<Navigate to='/' replace />} />
           </Routes>
         </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './Settings.css'
+import ElectronTest from '../ElectronTest'
 
 // Define default settings object outside the component for reuse
 const DEFAULT_SETTINGS = {
@@ -513,6 +514,12 @@ const Settings = () => {
         <p className='shortcut-info'>
           Note: Keyboard shortcuts cannot be customized at this time.
         </p>
+      </div>
+
+      <div className='settings-section'>
+        <div className='settings-section-content'>
+          <ElectronTest />
+        </div>
       </div>
 
       <div className='settings-actions'>

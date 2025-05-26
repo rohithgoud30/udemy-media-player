@@ -31,13 +31,6 @@ const Navbar = () => {
         >
           Settings
         </Link>
-
-        <Link
-          to='/test'
-          className={location.pathname === '/test' ? 'active' : ''}
-        >
-          Test Electron API
-        </Link>
       </div>
     </nav>
   )

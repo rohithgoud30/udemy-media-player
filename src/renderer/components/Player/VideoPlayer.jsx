@@ -1200,29 +1200,27 @@ const VideoPlayer = () => {
 
       {/* All content below the video */}
       <div className='player-content'>
-        {/* Course and lecture information */}
-        <div className='player-header'>
+        {/* New compact header section */}
+        <div className='player-header-collapsed'>
           {lecture && (
             <>
-              <h1 className='lecture-title'>{lecture.title}</h1>
+              <h1 className='lecture-title-top'>{lecture.title}</h1>
               {course && (
-                <div className='course-info'>
-                  <span>{course.title}</span>
+                <div className='course-header-row'>
+                  <div className='course-title'>
+                    <strong>Course:</strong> {course.title}
+                  </div>
+                  <button
+                    className='back-to-course-btn'
+                    onClick={() => navigate(`/course/${lecture.courseId}`)}
+                    title='Back to Course'
+                  >
+                    ← Back to Course
+                  </button>
                 </div>
               )}
             </>
           )}
-        </div>
-
-        {/* Navigation button */}
-        <div className='player-navigation'>
-          <button
-            className='nav-button back-button'
-            onClick={() => navigate(`/course/${lecture?.courseId}`)}
-            title='Back to Course'
-          >
-            Back to Course
-          </button>
         </div>
 
         {/* Player body with two-column layout for larger screens */}
