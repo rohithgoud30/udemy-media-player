@@ -1260,6 +1260,11 @@ const VideoPlayer = () => {
                           ...lecture,
                           completed: !lecture.completed,
                         })
+
+                        // If marking as complete, trigger navigation to next lecture
+                        if (!lecture.completed) {
+                          navigateToLecture('next')
+                        }
                       }
                     }}
                   >
@@ -1275,6 +1280,8 @@ const VideoPlayer = () => {
                         // Reset position in player
                         if (playerRef.current) {
                           playerRef.current.currentTime(0)
+                          // Start playing from the beginning
+                          playerRef.current.play()
                         }
 
                         // Reset position in database
@@ -1290,7 +1297,9 @@ const VideoPlayer = () => {
                           savedProgress: 0,
                         })
 
-                        console.log('Position reset to beginning')
+                        console.log(
+                          'Position reset to beginning and started playing'
+                        )
                       }}
                     >
                       Reset to Beginning

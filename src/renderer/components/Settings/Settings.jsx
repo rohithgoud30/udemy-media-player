@@ -8,7 +8,7 @@ const DEFAULT_SETTINGS = {
   // Playback settings
   playback: {
     defaultSpeed: 1.0,
-    autoPlay: false,
+    autoPlay: true,
     preferredQuality: 'auto',
     rememberPosition: true,
     autoMarkCompleted: true,
