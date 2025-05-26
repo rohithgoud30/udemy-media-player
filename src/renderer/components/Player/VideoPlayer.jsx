@@ -1214,28 +1214,14 @@ const VideoPlayer = () => {
           )}
         </div>
 
-        {/* Navigation buttons below the information */}
+        {/* Navigation button */}
         <div className='player-navigation'>
-          <button
-            className='nav-button prev-button'
-            onClick={() => navigateToLecture('prev')}
-            title='Previous Lecture (<)'
-          >
-            ← Previous
-          </button>
           <button
             className='nav-button back-button'
             onClick={() => navigate(`/course/${lecture?.courseId}`)}
             title='Back to Course'
           >
             Back to Course
-          </button>
-          <button
-            className='nav-button next-button'
-            onClick={() => navigateToLecture('next')}
-            title='Next Lecture (>)'
-          >
-            Next →
           </button>
         </div>
 
