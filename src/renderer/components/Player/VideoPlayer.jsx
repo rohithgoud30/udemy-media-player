@@ -464,6 +464,38 @@ const VideoPlayer = () => {
       // Set up event handlers - store player reference first to avoid null errors
       playerRef.current = player
 
+      // Add click-to-navigate feature for left/right sides of the player
+      videoElement.addEventListener('click', (event) => {
+        // Only handle clicks if we're not in fullscreen
+        if (player.isFullscreen()) {
+          return
+        }
+
+        // Don't handle click if player controls were clicked
+        if (event.target !== videoElement) {
+          return
+        }
+
+        // Get click position relative to player width
+        const playerWidth = videoElement.offsetWidth
+        const clickX = event.offsetX
+        const clickPercentage = (clickX / playerWidth) * 100
+
+        // If clicked on left 30% of screen, go to previous lecture
+        if (clickPercentage < 30) {
+          event.preventDefault() // Prevent default click behavior
+          event.stopPropagation() // Stop event from bubbling
+          navigateToLecture('prev')
+        }
+        // If clicked on right 30% of screen, go to next lecture
+        else if (clickPercentage > 70) {
+          event.preventDefault() // Prevent default click behavior
+          event.stopPropagation() // Stop event from bubbling
+          navigateToLecture('next')
+        }
+        // Middle area is for normal player interaction (play/pause)
+      })
+
       // Add ready event to ensure player is fully initialized
       player.on('ready', function () {
         console.log('Player is fully initialized and ready')
@@ -1311,28 +1343,9 @@ const VideoPlayer = () => {
         </div>
 
         {/* Keyboard shortcuts guide */}
-        <div
-          className='keyboard-shortcuts'
-          style={{
-            marginTop: '0.5rem',
-            marginBottom: '0.5rem',
-            padding: '0.75rem 1rem',
-            backgroundColor: 'var(--background-card)',
-            borderRadius: '8px',
-            border: '1px solid var(--border-color)',
-            fontSize: '0.9rem',
-          }}
-        >
-          <h3 style={{ marginBottom: '0.5rem', fontSize: '1rem' }}>
-            Keyboard Shortcuts
-          </h3>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-              gap: '0.5rem',
-            }}
-          >
+        <div className='keyboard-shortcuts'>
+          <h3>Navigation</h3>
+          <div className='keyboard-shortcuts-grid'>
             <div>
               <strong>Space</strong> - Play/Pause
             </div>
@@ -1344,6 +1357,9 @@ const VideoPlayer = () => {
             </div>
             <div>
               <strong>,/.</strong> - Previous/Next
+            </div>
+            <div>
+              <strong>Click L/R</strong> - Previous/Next
             </div>
           </div>
         </div>
