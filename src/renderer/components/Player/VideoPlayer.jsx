@@ -194,15 +194,26 @@ const VideoPlayer = () => {
         const progress = await ProgressManager.getLectureProgress(
           lectureData.id
         )
-        // Override saved progress if startPosition provided, else use stored position
-        const savedPos =
-          routeState.startPosition !== undefined
-            ? routeState.startPosition
-            : progress.position
+
+        // Determine if we should start from beginning or resume
+        let savedPos = 0
+
+        // If lecture is completed and not coming from a specific timestamp, start from beginning
+        if (progress.completed && routeState.startPosition === undefined) {
+          console.log('Lecture was completed, starting from beginning')
+          savedPos = 0
+        } else if (routeState.startPosition !== undefined) {
+          // If specific position provided via routing, use that
+          savedPos = routeState.startPosition
+        } else if (progress.position > 0) {
+          // Otherwise use stored position
+          savedPos = progress.position
+        }
 
         console.log(`Loading saved progress for lecture ${lectureData.id}:`, {
           routeStatePosition: routeState.startPosition,
           dbPosition: progress.position,
+          isCompleted: progress.completed,
           finalPosition: savedPos,
         })
 
@@ -211,6 +222,7 @@ const VideoPlayer = () => {
           ...lectureData,
           videoUrl: routeState.videoUrl || createVideoUrl(lectureData.filePath),
           savedProgress: savedPos,
+          completed: progress.completed || false,
         }
         setLecture(lectureWithProgress)
 
@@ -346,7 +358,9 @@ const VideoPlayer = () => {
       'Starting position for player:',
       startPosition,
       'lecture saved progress:',
-      lectureData.savedProgress
+      lectureData.savedProgress,
+      'completed:',
+      lectureData.completed
     )
 
     // Increased wait time to ensure DOM is fully rendered
@@ -479,6 +493,10 @@ const VideoPlayer = () => {
               }
             }, 200)
           }, 300)
+        } else {
+          console.log(
+            'Starting video from beginning due to settings or completed state'
+          )
         }
 
         // Set up keyboard shortcuts
@@ -715,7 +733,14 @@ const VideoPlayer = () => {
           typeof player.duration === 'function'
         ) {
           console.log('Auto-marking lecture as completed')
-          ProgressManager.saveProgress(lectureData.id, player.duration(), true)
+          ProgressManager.saveProgress(lectureData.id, 0, true) // Save position as 0 when completed
+
+          // Update local state to reflect completion
+          setLecture((prevLecture) => ({
+            ...prevLecture,
+            completed: true,
+            savedProgress: 0, // Reset saved progress when completed
+          }))
 
           // Auto-play next lecture if setting is enabled
           if (effectiveSettings.autoPlayNext) {
@@ -1226,6 +1251,35 @@ const VideoPlayer = () => {
                       ? 'Mark as Incomplete'
                       : 'Mark as Completed'}
                   </button>
+
+                  {lecture.savedProgress > 0 && (
+                    <button
+                      className='reset-position-button'
+                      onClick={async () => {
+                        // Reset position in player
+                        if (playerRef.current) {
+                          playerRef.current.currentTime(0)
+                        }
+
+                        // Reset position in database
+                        await ProgressManager.saveProgress(
+                          lecture.id,
+                          0,
+                          lecture.completed
+                        )
+
+                        // Update state
+                        setLecture({
+                          ...lecture,
+                          savedProgress: 0,
+                        })
+
+                        console.log('Position reset to beginning')
+                      }}
+                    >
+                      Reset to Beginning
+                    </button>
+                  )}
                 </>
               )}
             </div>
@@ -1240,17 +1294,6 @@ const VideoPlayer = () => {
                   {course && (
                     <p>
                       <strong>Course:</strong> {course.title}
-                    </p>
-                  )}
-                  {lecture.savedProgress > 0 && playerRef.current && (
-                    <p>
-                      <strong>Progress:</strong>{' '}
-                      {Math.floor(
-                        (lecture.savedProgress /
-                          (playerRef.current?.duration() || 1)) *
-                          100
-                      )}
-                      %
                     </p>
                   )}
                 </>
@@ -1271,19 +1314,23 @@ const VideoPlayer = () => {
         <div
           className='keyboard-shortcuts'
           style={{
-            marginTop: '2rem',
-            padding: '1rem',
+            marginTop: '0.5rem',
+            marginBottom: '0.5rem',
+            padding: '0.75rem 1rem',
             backgroundColor: 'var(--background-card)',
             borderRadius: '8px',
             border: '1px solid var(--border-color)',
+            fontSize: '0.9rem',
           }}
         >
-          <h3 style={{ marginBottom: '1rem' }}>Keyboard Shortcuts</h3>
+          <h3 style={{ marginBottom: '0.5rem', fontSize: '1rem' }}>
+            Keyboard Shortcuts
+          </h3>
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-              gap: '0.75rem',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+              gap: '0.5rem',
             }}
           >
             <div>

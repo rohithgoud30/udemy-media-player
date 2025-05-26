@@ -29,7 +29,7 @@
 
 /* Player Header */
 .player-header {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .lecture-title {
@@ -87,8 +87,9 @@
 .player-body {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.5rem;
   margin-top: 1rem;
+  margin-bottom: 1rem;
 }
 
 /* Video Info */
@@ -100,7 +101,7 @@
   background-color: var(--background-card);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0;
 }
 
 .video-info-section {
@@ -203,12 +204,38 @@
   border-color: transparent;
 }
 
+.reset-position-button {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--background-dark);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  margin-top: 0.5rem;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 300px;
+  opacity: 0.85;
+}
+
+.reset-position-button:hover {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  opacity: 1;
+}
+
 /* Mini Course View */
 .mini-course-view {
   background-color: var(--background-card);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 1.5rem;
+  margin-bottom: 0;
 }
 
 .mini-course-title {
