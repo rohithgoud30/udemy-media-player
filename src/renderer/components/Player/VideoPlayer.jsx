@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import videojs from 'video.js'
 import 'video.js/dist/video-js.css'
+import './VideoPlayer.css'
 import { CourseManager, ProgressManager } from '../../../js/database'
 import db from '../../../js/database'
 
@@ -463,37 +464,43 @@ const VideoPlayer = () => {
           // Use a small timeout to ensure the player is fully ready
           setTimeout(() => {
             const currentPos = player.currentTime() // Get current position before seeking
-            console.log(
-              `Before seeking: current position is ${currentPos}, seeking to ${startPosition}`
-            )
+            console.log(`Current time before seeking: ${currentPos}`)
             player.currentTime(startPosition)
 
             // Add a verification check to ensure the seek was successful
             setTimeout(() => {
-              const currentPos = player.currentTime()
-              if (Math.abs(currentPos - startPosition) > 0.5) {
-                console.log(
-                  'Position verification failed, retrying seek to:',
-                  startPosition
+              const newPos = player.currentTime()
+              console.log(`Position after seeking: ${newPos}`)
+              if (Math.abs(newPos - startPosition) > 0.5) {
+                console.warn(
+                  'Seeking may not have worked correctly. Trying again...'
                 )
                 player.currentTime(startPosition)
-
-                // Add one more verification
-                setTimeout(() => {
-                  console.log(
-                    'Final position after retry:',
-                    player.currentTime()
-                  )
-                }, 200)
-              } else {
-                console.log('Position verified successfully at:', currentPos)
               }
             }, 200)
-          }, 100)
-        } else {
-          console.log(
-            `Not seeking because: rememberPosition=${effectiveSettings.rememberPosition}, startPosition=${startPosition}`
-          )
+          }, 300)
+        }
+
+        // Set up keyboard shortcuts
+        const keyboardCleanup = setupKeyboardShortcuts(player)
+
+        // Request fullscreen if that setting is enabled
+        // You can add a setting for this in your settings component
+        const shouldEnterFullscreen = false // Change to read from settings
+        if (shouldEnterFullscreen) {
+          setTimeout(() => {
+            try {
+              const videoElement =
+                videoRef.current.querySelector('video#video-player')
+              if (videoElement && videoElement.requestFullscreen) {
+                videoElement.requestFullscreen().catch((e) => {
+                  console.warn('Could not enter fullscreen:', e)
+                })
+              }
+            } catch (error) {
+              console.error('Error requesting fullscreen:', error)
+            }
+          }, 1000) // Give it a bit more time to be ready
         }
       })
 
@@ -1030,6 +1037,69 @@ const VideoPlayer = () => {
     )
   }
 
+  // Add this function to handle keyboard shortcuts
+  const setupKeyboardShortcuts = (player) => {
+    const handleKeyDown = (event) => {
+      // Only process if player exists and is ready
+      if (!player || !document.activeElement) return
+
+      // Skip if we're in an input field or textarea
+      if (
+        document.activeElement.tagName === 'INPUT' ||
+        document.activeElement.tagName === 'TEXTAREA'
+      ) {
+        return
+      }
+
+      switch (event.key) {
+        case ' ': // Spacebar - toggle play/pause
+          event.preventDefault()
+          if (player.paused()) {
+            player.play()
+          } else {
+            player.pause()
+          }
+          break
+        case 'ArrowLeft': // Left arrow - seek backward 5 seconds
+          event.preventDefault()
+          player.currentTime(Math.max(0, player.currentTime() - 5))
+          break
+        case 'ArrowRight': // Right arrow - seek forward 5 seconds
+          event.preventDefault()
+          player.currentTime(player.currentTime() + 5)
+          break
+        case 'f': // f - toggle fullscreen
+          event.preventDefault()
+          if (player.isFullscreen()) {
+            player.exitFullscreen()
+          } else {
+            player.requestFullscreen()
+          }
+          break
+        case '<':
+        case ',': // < or , - previous lecture (standard video player convention)
+          event.preventDefault()
+          navigateToLecture('prev')
+          break
+        case '>':
+        case '.': // > or . - next lecture (standard video player convention)
+          event.preventDefault()
+          navigateToLecture('next')
+          break
+        default:
+          break
+      }
+    }
+
+    // Add keyboard event listener
+    document.addEventListener('keydown', handleKeyDown)
+
+    // Return cleanup function
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }
+
   if (loading) {
     return <div className='loading'>Loading video...</div>
   }
@@ -1092,7 +1162,7 @@ const VideoPlayer = () => {
           <button
             className='nav-button prev-button'
             onClick={() => navigateToLecture('prev')}
-            title='Previous Lecture'
+            title='Previous Lecture (<)'
           >
             ← Previous
           </button>
@@ -1106,59 +1176,128 @@ const VideoPlayer = () => {
           <button
             className='nav-button next-button'
             onClick={() => navigateToLecture('next')}
-            title='Next Lecture'
+            title='Next Lecture (>)'
           >
             Next →
           </button>
         </div>
 
-        {/* Additional video info and actions (centered) */}
-        <div
-          className='video-info'
-          style={{ textAlign: 'center', margin: '20px 0' }}
-        >
-          {lecture && (
-            <>
-              <div className='video-progress-info'>
-                {lecture.completed ? (
-                  <span className='completion-status completed'>
-                    <span className='status-icon'>✓</span> Marked as completed
-                  </span>
-                ) : lecture.savedProgress && lecture.savedProgress > 0 ? (
-                  <span className='completion-status in-progress'>
-                    <span className='status-icon'>▶</span> In progress
-                  </span>
-                ) : (
-                  <span className='completion-status not-started'>
-                    <span className='status-icon'>○</span> Not started
-                  </span>
-                )}
-              </div>
-              <button
-                className={`mark-complete-button ${
-                  lecture.completed ? 'completed' : ''
-                }`}
-                onClick={async () => {
-                  if (lecture) {
-                    await ProgressManager.markLectureWatched(
-                      lecture.id,
-                      !lecture.completed
-                    )
-                    setLecture({ ...lecture, completed: !lecture.completed })
-                  }
-                }}
-              >
-                {lecture.completed ? 'Mark as Incomplete' : 'Mark as Completed'}
-              </button>
-            </>
-          )}
+        {/* Player body with two-column layout for larger screens */}
+        <div className='player-body'>
+          {/* Video info column */}
+          <div className='video-info'>
+            <div className='video-info-section'>
+              <h3>Lecture Status</h3>
+              {lecture && (
+                <>
+                  <div className='video-progress-info'>
+                    {lecture.completed ? (
+                      <span className='completion-status completed'>
+                        <span className='status-icon'>✓</span> Completed
+                      </span>
+                    ) : lecture.savedProgress && lecture.savedProgress > 0 ? (
+                      <span className='completion-status in-progress'>
+                        <span className='status-icon'>▶</span> In Progress
+                      </span>
+                    ) : (
+                      <span className='completion-status not-started'>
+                        <span className='status-icon'>○</span> Not Started
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    className={`mark-complete-button ${
+                      lecture.completed ? 'completed' : ''
+                    }`}
+                    onClick={async () => {
+                      if (lecture) {
+                        await ProgressManager.markLectureWatched(
+                          lecture.id,
+                          !lecture.completed
+                        )
+                        setLecture({
+                          ...lecture,
+                          completed: !lecture.completed,
+                        })
+                      }
+                    }}
+                  >
+                    {lecture.completed
+                      ? 'Mark as Incomplete'
+                      : 'Mark as Completed'}
+                  </button>
+                </>
+              )}
+            </div>
+
+            <div className='video-info-section'>
+              <h3>Details</h3>
+              {lecture && (
+                <>
+                  <p>
+                    <strong>Lecture:</strong> {lecture.title}
+                  </p>
+                  {course && (
+                    <p>
+                      <strong>Course:</strong> {course.title}
+                    </p>
+                  )}
+                  {lecture.savedProgress > 0 && playerRef.current && (
+                    <p>
+                      <strong>Progress:</strong>{' '}
+                      {Math.floor(
+                        (lecture.savedProgress /
+                          (playerRef.current?.duration() || 1)) *
+                          100
+                      )}
+                      %
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Mini course view section - will be a sidebar on larger screens */}
+          <div className='mini-course-view'>
+            <h3 className='mini-course-title'>Course Contents</h3>
+            <div className='mini-lectures-list'>
+              {nearbyLectures.map(renderMiniLectureItem)}
+            </div>
+          </div>
         </div>
 
-        {/* Mini course view section */}
-        <div className='mini-course-view'>
-          <h3 className='mini-course-title'>Course Contents</h3>
-          <div className='mini-lectures-list'>
-            {nearbyLectures.map(renderMiniLectureItem)}
+        {/* Keyboard shortcuts guide */}
+        <div
+          className='keyboard-shortcuts'
+          style={{
+            marginTop: '2rem',
+            padding: '1rem',
+            backgroundColor: 'var(--background-card)',
+            borderRadius: '8px',
+            border: '1px solid var(--border-color)',
+          }}
+        >
+          <h3 style={{ marginBottom: '1rem' }}>Keyboard Shortcuts</h3>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+              gap: '0.75rem',
+            }}
+          >
+            <div>
+              <strong>Space</strong> - Play/Pause
+            </div>
+            <div>
+              <strong>←/→</strong> - Seek 5s
+            </div>
+            <div>
+              <strong>f</strong> - Fullscreen
+            </div>
+            <div>
+              <strong>,/.</strong> - Previous/Next
+            </div>
           </div>
         </div>
       </div>
