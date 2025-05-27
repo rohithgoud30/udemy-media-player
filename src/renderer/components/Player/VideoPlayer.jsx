@@ -106,6 +106,7 @@ const VideoPlayer = () => {
   const [error, setError] = useState(null)
   const [saveInterval, setSaveInterval] = useState(null)
   const [nearbyLectures, setNearbyLectures] = useState([])
+  const [resetInProgress, setResetInProgress] = useState(false)
   const [playerSettings, setPlayerSettings] = useState({
     defaultSpeed: 1.0,
     autoPlay: true,
@@ -363,73 +364,110 @@ const VideoPlayer = () => {
       lectureData.completed
     )
 
-    // Increased wait time to ensure DOM is fully rendered
-    setTimeout(() => {
-      // Use the video element created in JSX instead of creating a new one
-      const videoElement = videoRef.current.querySelector('video#video-player')
-      if (!videoElement) {
-        console.error(
-          'Video element not found in initializePlayer. DOM might not be ready yet.'
-        )
+    // Find the video element
+    const videoElement = videoRef.current.querySelector('video#video-player')
+    if (!videoElement) {
+      console.error(
+        'Video element not found in initializePlayer. DOM might not be ready yet.'
+      )
+      return null
+    }
 
-        // Add a retry mechanism if the element isn't found
-        setTimeout(() => {
-          console.log('Retrying player initialization...')
-          initializePlayer(lectureData, startPosition)
-        }, 500) // Retry after 500ms
+    // Check if player is already initialized
+    if (playerRef.current) {
+      console.log(
+        'Player already exists, updating properties instead of recreating'
+      )
 
-        return null
-      }
+      try {
+        // Update player source if needed
+        let videoUrl = lectureData.videoUrl
+        if (!videoUrl && lectureData.filePath) {
+          videoUrl = createVideoUrl(lectureData.filePath)
+        }
 
-      console.log('Video element found, proceeding with player initialization')
+        const videoType =
+          routeState.videoType || getVideoType(lectureData.filePath)
 
-      // Set essential attributes
-      videoElement.controls = true
-      videoElement.preload = 'auto'
-      videoElement.crossOrigin = 'anonymous' // Add crossOrigin for better media handling
+        // Only update source if it's different
+        const currentSrc = playerRef.current.src()
+        if (currentSrc !== videoUrl) {
+          playerRef.current.src({
+            src: videoUrl,
+            type: videoType,
+          })
+        }
 
-      // Get the video URL - either from our loadLectureData function or create it here
-      let videoUrl = lectureData.videoUrl
-      if (!videoUrl && lectureData.filePath) {
-        // Create the URL directly since we now have a synchronous function
-        videoUrl = createVideoUrl(lectureData.filePath)
-        console.log('Created video URL in initializePlayer:', videoUrl)
-      } else if (!videoUrl) {
-        console.error('No video URL or filePath available - playback may fail')
-      }
+        // Set current time if provided
+        if (startPosition > 0 && effectiveSettings.rememberPosition) {
+          console.log(`Seeking existing player to: ${startPosition}`)
+          playerRef.current.currentTime(startPosition)
+        }
 
-      // Determine video type with override if provided
-      const videoType =
-        routeState.videoType || getVideoType(lectureData.filePath)
-
-      console.log('Initializing player with URL:', videoUrl)
-      console.log('Video type:', videoType)
-
-      // Add debugging info to console
-      console.log('Player configuration:', {
-        videoUrl,
-        videoType,
-        filePath: lectureData.filePath,
-        startPosition,
-        playerSettings,
-      })
-
-      // Configure video.js player with optimal settings for local files
-      const effectiveSettings = {
-        ...playerSettings,
-        ...(routeState.playerSettings || {}),
-      }
-
-      // Dispose any existing player first
-      if (playerRef.current) {
+        return playerRef.current
+      } catch (error) {
+        console.error('Error updating existing player, will recreate:', error)
         try {
           playerRef.current.dispose()
         } catch (e) {
-          console.warn('Error disposing existing player:', e)
+          console.warn('Error disposing player during update:', e)
         }
+        playerRef.current = null
       }
+    }
 
-      const player = videojs(
+    console.log('Video element found, proceeding with player initialization')
+
+    // Set essential attributes
+    videoElement.controls = true
+    videoElement.preload = 'auto'
+    videoElement.crossOrigin = 'anonymous' // Add crossOrigin for better media handling
+
+    // Get the video URL - either from our loadLectureData function or create it here
+    let videoUrl = lectureData.videoUrl
+    if (!videoUrl && lectureData.filePath) {
+      // Create the URL directly since we now have a synchronous function
+      videoUrl = createVideoUrl(lectureData.filePath)
+      console.log('Created video URL in initializePlayer:', videoUrl)
+    } else if (!videoUrl) {
+      console.error('No video URL or filePath available - playback may fail')
+    }
+
+    // Determine video type with override if provided
+    const videoType = routeState.videoType || getVideoType(lectureData.filePath)
+
+    console.log('Initializing player with URL:', videoUrl)
+    console.log('Video type:', videoType)
+
+    // Add debugging info to console
+    console.log('Player configuration:', {
+      videoUrl,
+      videoType,
+      filePath: lectureData.filePath,
+      startPosition,
+      playerSettings,
+    })
+
+    // Configure video.js player with optimal settings for local files
+    const effectiveSettings = {
+      ...playerSettings,
+      ...(routeState.playerSettings || {}),
+    }
+
+    // Dispose any existing player first - extra safety check
+    if (playerRef.current) {
+      try {
+        playerRef.current.dispose()
+      } catch (e) {
+        console.warn('Error disposing existing player:', e)
+      }
+      playerRef.current = null
+    }
+
+    // Create player with error handling
+    let player
+    try {
+      player = videojs(
         videoElement,
         {
           controls: true,
@@ -460,150 +498,150 @@ const VideoPlayer = () => {
           // in the 'ready' event instead for better reliability
         }
       )
+    } catch (error) {
+      console.error('Error creating video.js player:', error)
+      return null
+    }
 
-      // Set up event handlers - store player reference first to avoid null errors
+    // Set up event handlers - store player reference first to avoid null errors
+    playerRef.current = player
+
+    // Add click-to-navigate feature for left/right sides of the player
+    videoElement.addEventListener('click', (event) => {
+      // Only handle clicks if we're not in fullscreen
+      if (player.isFullscreen()) {
+        return
+      }
+
+      // Don't handle click if player controls were clicked
+      if (event.target !== videoElement) {
+        return
+      }
+
+      // Get click position relative to player width
+      const playerWidth = videoElement.offsetWidth
+      const clickX = event.offsetX
+      const clickPercentage = (clickX / playerWidth) * 100
+
+      // If clicked on left 30% of screen, go to previous lecture
+      if (clickPercentage < 30) {
+        event.preventDefault() // Prevent default click behavior
+        event.stopPropagation() // Stop event from bubbling
+        navigateToLecture('prev')
+      }
+      // If clicked on right 30% of screen, go to next lecture
+      else if (clickPercentage > 70) {
+        event.preventDefault() // Prevent default click behavior
+        event.stopPropagation() // Stop event from bubbling
+        navigateToLecture('next')
+      }
+      // Middle area is for normal player interaction (play/pause)
+    })
+
+    // Add ready event to ensure player is fully initialized
+    player.on('ready', function () {
+      console.log('Player is fully initialized and ready')
+      // Re-assign player reference to ensure it's available after initialization
       playerRef.current = player
 
-      // Add click-to-navigate feature for left/right sides of the player
-      videoElement.addEventListener('click', (event) => {
-        // Only handle clicks if we're not in fullscreen
-        if (player.isFullscreen()) {
-          return
-        }
-
-        // Don't handle click if player controls were clicked
-        if (event.target !== videoElement) {
-          return
-        }
-
-        // Get click position relative to player width
-        const playerWidth = videoElement.offsetWidth
-        const clickX = event.offsetX
-        const clickPercentage = (clickX / playerWidth) * 100
-
-        // If clicked on left 30% of screen, go to previous lecture
-        if (clickPercentage < 30) {
-          event.preventDefault() // Prevent default click behavior
-          event.stopPropagation() // Stop event from bubbling
-          navigateToLecture('prev')
-        }
-        // If clicked on right 30% of screen, go to next lecture
-        else if (clickPercentage > 70) {
-          event.preventDefault() // Prevent default click behavior
-          event.stopPropagation() // Stop event from bubbling
-          navigateToLecture('next')
-        }
-        // Middle area is for normal player interaction (play/pause)
-      })
-
-      // Add ready event to ensure player is fully initialized
-      player.on('ready', function () {
-        console.log('Player is fully initialized and ready')
-        // Re-assign player reference to ensure it's available after initialization
-        playerRef.current = player
-
-        // Make sure to set the correct time after player is ready
-        if (effectiveSettings.rememberPosition && startPosition > 0) {
-          console.log(
-            `Seeking to saved position: ${startPosition} for lecture ID: ${lectureData.id}`
-          )
-          // Use a small timeout to ensure the player is fully ready
-          setTimeout(() => {
-            const currentPos = player.currentTime() // Get current position before seeking
-            console.log(`Current time before seeking: ${currentPos}`)
-            player.currentTime(startPosition)
-
-            // Add a verification check to ensure the seek was successful
-            setTimeout(() => {
-              const newPos = player.currentTime()
-              console.log(`Position after seeking: ${newPos}`)
-              if (Math.abs(newPos - startPosition) > 0.5) {
-                console.warn(
-                  'Seeking may not have worked correctly. Trying again...'
-                )
-                player.currentTime(startPosition)
-              }
-            }, 200)
-          }, 300)
-        } else {
-          console.log(
-            'Starting video from beginning due to settings or completed state'
-          )
-        }
-
-        // Set up keyboard shortcuts
-        const keyboardCleanup = setupKeyboardShortcuts(player)
-
-        // Request fullscreen if that setting is enabled
-        // You can add a setting for this in your settings component
-        const shouldEnterFullscreen = false // Change to read from settings
-        if (shouldEnterFullscreen) {
-          setTimeout(() => {
-            try {
-              const videoElement =
-                videoRef.current.querySelector('video#video-player')
-              if (videoElement && videoElement.requestFullscreen) {
-                videoElement.requestFullscreen().catch((e) => {
-                  console.warn('Could not enter fullscreen:', e)
-                })
-              }
-            } catch (error) {
-              console.error('Error requesting fullscreen:', error)
-            }
-          }, 1000) // Give it a bit more time to be ready
-        }
-      })
-
-      // Add a timeupdate listener for additional verification of position
-      player.on('timeupdate', function () {
-        // Only do this check on the first few timeupdate events
-        if (
-          player.positionVerified ||
-          !effectiveSettings.rememberPosition ||
-          startPosition <= 0
-        ) {
-          return
-        }
-
-        // Get current timestamp
-        const now = Date.now()
-
-        // Only check within the first 3 seconds of playback
-        if (
-          !player.playbackStartTime ||
-          now - player.playbackStartTime > 3000
-        ) {
-          player.positionVerified = true
-          return
-        }
-
-        // Verify position is correct
-        const currentPos = player.currentTime()
-        if (Math.abs(currentPos - startPosition) > 0.5) {
-          console.log(
-            'Position check failed in timeupdate, correcting to:',
-            startPosition
-          )
+      // Make sure to set the correct time after player is ready
+      if (effectiveSettings.rememberPosition && startPosition > 0) {
+        console.log(
+          `Seeking to saved position: ${startPosition} for lecture ID: ${lectureData.id}`
+        )
+        // Use a small timeout to ensure the player is fully ready
+        setTimeout(() => {
+          const currentPos = player.currentTime() // Get current position before seeking
+          console.log(`Current time before seeking: ${currentPos}`)
           player.currentTime(startPosition)
-        } else {
-          console.log('Position verified in timeupdate')
-          player.positionVerified = true
-        }
-      })
 
-      // Mark the start of playback time for verification window
-      player.on('playing', function () {
-        if (!player.playbackStartTime) {
-          player.playbackStartTime = Date.now()
-        }
-      })
+          // Add a verification check to ensure the seek was successful
+          setTimeout(() => {
+            const newPos = player.currentTime()
+            console.log(`Position after seeking: ${newPos}`)
+            if (Math.abs(newPos - startPosition) > 0.5) {
+              console.warn(
+                'Seeking may not have worked correctly. Trying again...'
+              )
+              player.currentTime(startPosition)
+            }
+          }, 200)
+        }, 300)
+      } else {
+        console.log(
+          'Starting video from beginning due to settings or completed state'
+        )
+      }
 
-      // Set up the rest of the event handlers
-      setupPlayerEventHandlers(player, lectureData, effectiveSettings)
+      // Set up keyboard shortcuts
+      const keyboardCleanup = setupKeyboardShortcuts(player)
 
-      // Return the player instance
-      return player
-    }, 100) // Short delay to ensure DOM is ready
+      // Request fullscreen if that setting is enabled
+      // You can add a setting for this in your settings component
+      const shouldEnterFullscreen = false // Change to read from settings
+      if (shouldEnterFullscreen) {
+        setTimeout(() => {
+          try {
+            const videoElement =
+              videoRef.current.querySelector('video#video-player')
+            if (videoElement && videoElement.requestFullscreen) {
+              videoElement.requestFullscreen().catch((e) => {
+                console.warn('Could not enter fullscreen:', e)
+              })
+            }
+          } catch (error) {
+            console.error('Error requesting fullscreen:', error)
+          }
+        }, 1000) // Give it a bit more time to be ready
+      }
+    })
+
+    // Add a timeupdate listener for additional verification of position
+    player.on('timeupdate', function () {
+      // Only do this check on the first few timeupdate events
+      if (
+        player.positionVerified ||
+        !effectiveSettings.rememberPosition ||
+        startPosition <= 0
+      ) {
+        return
+      }
+
+      // Get current timestamp
+      const now = Date.now()
+
+      // Only check within the first 3 seconds of playback
+      if (!player.playbackStartTime || now - player.playbackStartTime > 3000) {
+        player.positionVerified = true
+        return
+      }
+
+      // Verify position is correct
+      const currentPos = player.currentTime()
+      if (Math.abs(currentPos - startPosition) > 0.5) {
+        console.log(
+          'Position check failed in timeupdate, correcting to:',
+          startPosition
+        )
+        player.currentTime(startPosition)
+      } else {
+        console.log('Position verified in timeupdate')
+        player.positionVerified = true
+      }
+    })
+
+    // Mark the start of playback time for verification window
+    player.on('playing', function () {
+      if (!player.playbackStartTime) {
+        player.playbackStartTime = Date.now()
+      }
+    })
+
+    // Set up the rest of the event handlers
+    setupPlayerEventHandlers(player, lectureData, effectiveSettings)
+
+    // Return the player instance
+    return player
   }
 
   // Setup player event handlers
@@ -869,6 +907,12 @@ const VideoPlayer = () => {
       return // Don't initialize player until we have lecture data and are ready
     }
 
+    // Skip player recreation if we're just resetting position
+    if (resetInProgress) {
+      setResetInProgress(false)
+      return
+    }
+
     console.log('Player initialization effect running for lecture:', lecture.id)
 
     // Clean up any existing player first
@@ -883,6 +927,9 @@ const VideoPlayer = () => {
     }
 
     let observer = null
+    let initAttempts = 0
+    const MAX_INIT_ATTEMPTS = 5
+    let initTimer = null
 
     // Create a MutationObserver to detect when the video element is added to the DOM
     if (videoRef.current) {
@@ -923,16 +970,37 @@ const VideoPlayer = () => {
       observer.observe(videoRef.current, { childList: true, subtree: true })
     }
 
+    // Function to attempt player initialization with retry logic
+    const attemptInitialization = () => {
+      initAttempts++
+      // Check if video element exists before trying to initialize
+      if (
+        videoRef.current &&
+        videoRef.current.querySelector('video#video-player')
+      ) {
+        // Initialize the player with the lecture data
+        const startPosition = lecture.savedProgress || 0
+        console.log(
+          'Starting player initialization with position:',
+          startPosition
+        )
+        initializePlayer(lecture, startPosition)
+      } else if (initAttempts < MAX_INIT_ATTEMPTS) {
+        // Try again with exponential backoff
+        const delay = Math.min(500 * Math.pow(1.5, initAttempts - 1), 3000)
+        console.log(
+          `Video element not found, retrying in ${delay}ms (attempt ${initAttempts}/${MAX_INIT_ATTEMPTS})`
+        )
+        initTimer = setTimeout(attemptInitialization, delay)
+      } else {
+        console.error(
+          `Failed to find video element after ${MAX_INIT_ATTEMPTS} attempts`
+        )
+      }
+    }
+
     // Add a small delay to ensure the DOM is fully rendered before initializing the player
-    const initTimer = setTimeout(() => {
-      // Initialize the player with the lecture data
-      const startPosition = lecture.savedProgress || 0
-      console.log(
-        'Starting player initialization with position:',
-        startPosition
-      )
-      initializePlayer(lecture, startPosition)
-    }, 200) // Short delay to ensure DOM elements are ready
+    initTimer = setTimeout(attemptInitialization, 200)
 
     // Return cleanup function
     return () => {
@@ -952,7 +1020,9 @@ const VideoPlayer = () => {
       }
 
       // Clear the initialization timer
-      clearTimeout(initTimer)
+      if (initTimer) {
+        clearTimeout(initTimer)
+      }
 
       // Clear any intervals
       if (saveInterval) {
@@ -960,7 +1030,7 @@ const VideoPlayer = () => {
         setSaveInterval(null)
       }
     }
-  }, [lecture, loading, error])
+  }, [lecture, loading, error, resetInProgress])
 
   // Get all lectures for this course to enable next/prev navigation
   const navigateToLecture = async (direction) => {
@@ -1277,29 +1347,75 @@ const VideoPlayer = () => {
                     <button
                       className='reset-position-button'
                       onClick={async () => {
-                        // Reset position in player
-                        if (playerRef.current) {
-                          playerRef.current.currentTime(0)
-                          // Start playing from the beginning
-                          playerRef.current.play()
+                        try {
+                          console.log('Reset to Beginning clicked')
+
+                          // Reset position in player
+                          if (playerRef.current) {
+                            console.log('Updating player time to 0')
+
+                            // First pause to ensure stable state
+                            if (!playerRef.current.paused()) {
+                              playerRef.current.pause()
+                            }
+
+                            // Set time to 0 with safety check
+                            try {
+                              playerRef.current.currentTime(0)
+                            } catch (e) {
+                              console.error('Error setting time to 0:', e)
+                            }
+
+                            // Start playing from the beginning
+                            setTimeout(() => {
+                              try {
+                                playerRef.current
+                                  .play()
+                                  .then(() =>
+                                    console.log('Playback started successfully')
+                                  )
+                                  .catch((err) =>
+                                    console.error(
+                                      'Error starting playback:',
+                                      err
+                                    )
+                                  )
+                              } catch (playError) {
+                                console.error(
+                                  'Error calling play():',
+                                  playError
+                                )
+                              }
+                            }, 100)
+                          } else {
+                            console.warn(
+                              'Player not initialized, cannot reset position'
+                            )
+                          }
+
+                          // Reset position in database
+                          await ProgressManager.saveProgress(
+                            lecture.id,
+                            0,
+                            lecture.completed
+                          )
+
+                          // Set the reset flag to prevent player recreation
+                          setResetInProgress(true)
+
+                          // Update local state without triggering a player recreation
+                          // by modifying a copy of the lecture object
+                          setLecture((prevLecture) => ({
+                            ...prevLecture,
+                            savedProgress: 0,
+                          }))
+
+                          console.log(
+                            'Position reset to beginning and started playing'
+                          )
+                        } catch (error) {
+                          console.error('Error in reset button handler:', error)
                         }
-
-                        // Reset position in database
-                        await ProgressManager.saveProgress(
-                          lecture.id,
-                          0,
-                          lecture.completed
-                        )
-
-                        // Update state
-                        setLecture({
-                          ...lecture,
-                          savedProgress: 0,
-                        })
-
-                        console.log(
-                          'Position reset to beginning and started playing'
-                        )
                       }}
                     >
                       Reset to Beginning
