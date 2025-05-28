@@ -106,7 +106,6 @@ const VideoPlayer = () => {
   const [error, setError] = useState(null)
   const [saveInterval, setSaveInterval] = useState(null)
   const [nearbyLectures, setNearbyLectures] = useState([])
-  const [resetInProgress, setResetInProgress] = useState(false)
   const [playerSettings, setPlayerSettings] = useState({
     defaultSpeed: 1.0,
     autoPlay: true,
@@ -907,12 +906,6 @@ const VideoPlayer = () => {
       return // Don't initialize player until we have lecture data and are ready
     }
 
-    // Skip player recreation if we're just resetting position
-    if (resetInProgress) {
-      setResetInProgress(false)
-      return
-    }
-
     console.log('Player initialization effect running for lecture:', lecture.id)
 
     // Clean up any existing player first
@@ -1030,7 +1023,7 @@ const VideoPlayer = () => {
         setSaveInterval(null)
       }
     }
-  }, [lecture, loading, error, resetInProgress])
+  }, [lecture, loading, error])
 
   // Get all lectures for this course to enable next/prev navigation
   const navigateToLecture = async (direction) => {
@@ -1346,75 +1339,30 @@ const VideoPlayer = () => {
                   {lecture.savedProgress > 0 && (
                     <button
                       className='reset-position-button'
-                      onClick={async () => {
-                        try {
-                          console.log('Reset to Beginning clicked')
+                      onClick={() => {
+                        console.log('Reset to Beginning clicked')
 
-                          // Reset position in player
-                          if (playerRef.current) {
-                            console.log('Updating player time to 0')
+                        if (playerRef.current) {
+                          try {
+                            // Simply set the current time to 0
+                            playerRef.current.currentTime(0)
 
-                            // First pause to ensure stable state
-                            if (!playerRef.current.paused()) {
-                              playerRef.current.pause()
-                            }
-
-                            // Set time to 0 with safety check
-                            try {
-                              playerRef.current.currentTime(0)
-                            } catch (e) {
-                              console.error('Error setting time to 0:', e)
-                            }
-
-                            // Start playing from the beginning
-                            setTimeout(() => {
-                              try {
-                                playerRef.current
-                                  .play()
-                                  .then(() =>
-                                    console.log('Playback started successfully')
-                                  )
-                                  .catch((err) =>
-                                    console.error(
-                                      'Error starting playback:',
-                                      err
-                                    )
-                                  )
-                              } catch (playError) {
-                                console.error(
-                                  'Error calling play():',
-                                  playError
-                                )
-                              }
-                            }, 100)
-                          } else {
-                            console.warn(
-                              'Player not initialized, cannot reset position'
+                            // Update the database
+                            ProgressManager.saveProgress(
+                              lecture.id,
+                              0,
+                              lecture.completed
                             )
+
+                            // Play the video
+                            playerRef.current.play()
+
+                            console.log('Successfully reset video to beginning')
+                          } catch (error) {
+                            console.error('Error resetting video:', error)
                           }
-
-                          // Reset position in database
-                          await ProgressManager.saveProgress(
-                            lecture.id,
-                            0,
-                            lecture.completed
-                          )
-
-                          // Set the reset flag to prevent player recreation
-                          setResetInProgress(true)
-
-                          // Update local state without triggering a player recreation
-                          // by modifying a copy of the lecture object
-                          setLecture((prevLecture) => ({
-                            ...prevLecture,
-                            savedProgress: 0,
-                          }))
-
-                          console.log(
-                            'Position reset to beginning and started playing'
-                          )
-                        } catch (error) {
-                          console.error('Error in reset button handler:', error)
+                        } else {
+                          console.warn('Player not available for reset')
                         }
                       }}
                     >
