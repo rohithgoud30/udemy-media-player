@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import videojs from 'video.js'
 import 'video.js/dist/video-js.css'
@@ -114,6 +114,117 @@ const VideoPlayer = () => {
     autoPlayNext: true,
   })
 
+  // Define navigateToLecture early using useCallback
+  const navigateToLecture = useCallback(
+    async (direction) => {
+      if (!lecture || !lecture.courseId) {
+        console.error('No lecture or courseId available for navigation')
+        return
+      }
+
+      try {
+        // Load course data if needed
+        const courseData =
+          course || (await CourseManager.getCourseDetails(lecture.courseId))
+        if (!courseData || !courseData.sections) {
+          console.error('Could not load course data for navigation')
+          return
+        }
+
+        // Flatten all lectures from all sections
+        let allLectures = []
+        courseData.sections.forEach((section) => {
+          if (section.lectures) {
+            allLectures.push(...section.lectures)
+          }
+        })
+
+        // Sort lectures by section index and lecture index
+        allLectures.sort((a, b) => {
+          const sectionA = courseData.sections.find((s) => s.id === a.sectionId)
+          const sectionB = courseData.sections.find((s) => s.id === b.sectionId)
+
+          if (!sectionA || !sectionB) return 0
+
+          if (sectionA.index !== sectionB.index) {
+            return sectionA.index - sectionB.index
+          }
+
+          return a.index - b.index
+        })
+
+        console.log(
+          'All sorted lectures:',
+          allLectures.map((l) => l.title)
+        )
+
+        // Find current lecture index
+        const currentIndex = allLectures.findIndex((l) => l.id === lecture.id)
+        console.log('Current lecture index:', currentIndex, 'ID:', lecture.id)
+
+        if (currentIndex === -1) {
+          console.error('Current lecture not found in the course')
+          return
+        }
+
+        // Determine target lecture
+        let targetIndex = currentIndex
+        if (direction === 'next') {
+          targetIndex = Math.min(currentIndex + 1, allLectures.length - 1)
+        } else if (direction === 'prev') {
+          targetIndex = Math.max(currentIndex - 1, 0)
+        }
+
+        // Don't navigate if we're already at the start/end
+        if (targetIndex === currentIndex) {
+          console.log(
+            `Already at the ${
+              direction === 'next' ? 'end' : 'beginning'
+            } of the course`
+          )
+          return
+        }
+
+        // Save progress before navigating
+        if (
+          playerRef.current &&
+          typeof playerRef.current.currentTime === 'function'
+        ) {
+          try {
+            // Save current progress
+            await ProgressManager.saveProgress(
+              lecture.id,
+              playerRef.current.currentTime()
+            )
+          } catch (err) {
+            console.error('Error saving progress:', err)
+          }
+        }
+
+        // Clean up any intervals to prevent memory leaks
+        if (saveInterval) {
+          clearInterval(saveInterval)
+          setSaveInterval(null)
+        }
+
+        const targetLecture = allLectures[targetIndex]
+        console.log(`Navigating to ${direction} lecture:`, targetLecture.title)
+
+        // Use state to force unmount of video player component
+        setLoading(true) // Show loading state
+
+        // Use a small timeout to ensure React has time to process state change
+        setTimeout(() => {
+          // Navigate to the target lecture
+          navigate(`/watch/${targetLecture.id}`)
+        }, 50)
+      } catch (error) {
+        console.error('Error navigating to lecture:', error)
+      }
+    },
+    [lecture, course, playerRef, saveInterval, navigate]
+  )
+
   // Load player settings from localStorage
   useEffect(() => {
     try {
@@ -198,15 +309,15 @@ const VideoPlayer = () => {
         // Determine if we should start from beginning or resume
         let savedPos = 0
 
-        // If lecture is completed and not coming from a specific timestamp, start from beginning
+        // Always start from beginning if lecture is completed
         if (progress.completed && routeState.startPosition === undefined) {
           console.log('Lecture was completed, starting from beginning')
           savedPos = 0
         } else if (routeState.startPosition !== undefined) {
           // If specific position provided via routing, use that
           savedPos = routeState.startPosition
-        } else if (progress.position > 0) {
-          // Otherwise use stored position
+        } else if (progress.position > 0 && !progress.completed) {
+          // Only use stored position if not completed
           savedPos = progress.position
         }
 
@@ -505,38 +616,6 @@ const VideoPlayer = () => {
     // Set up event handlers - store player reference first to avoid null errors
     playerRef.current = player
 
-    // Add click-to-navigate feature for left/right sides of the player
-    videoElement.addEventListener('click', (event) => {
-      // Only handle clicks if we're not in fullscreen
-      if (player.isFullscreen()) {
-        return
-      }
-
-      // Don't handle click if player controls were clicked
-      if (event.target !== videoElement) {
-        return
-      }
-
-      // Get click position relative to player width
-      const playerWidth = videoElement.offsetWidth
-      const clickX = event.offsetX
-      const clickPercentage = (clickX / playerWidth) * 100
-
-      // If clicked on left 30% of screen, go to previous lecture
-      if (clickPercentage < 30) {
-        event.preventDefault() // Prevent default click behavior
-        event.stopPropagation() // Stop event from bubbling
-        navigateToLecture('prev')
-      }
-      // If clicked on right 30% of screen, go to next lecture
-      else if (clickPercentage > 70) {
-        event.preventDefault() // Prevent default click behavior
-        event.stopPropagation() // Stop event from bubbling
-        navigateToLecture('next')
-      }
-      // Middle area is for normal player interaction (play/pause)
-    })
-
     // Add ready event to ensure player is fully initialized
     player.on('ready', function () {
       console.log('Player is fully initialized and ready')
@@ -544,7 +623,12 @@ const VideoPlayer = () => {
       playerRef.current = player
 
       // Make sure to set the correct time after player is ready
-      if (effectiveSettings.rememberPosition && startPosition > 0) {
+      if (lectureData.completed) {
+        console.log(
+          'Lecture is completed. Setting player to start at 0 on ready.'
+        )
+        player.currentTime(0)
+      } else if (effectiveSettings.rememberPosition && startPosition > 0) {
         console.log(
           `Seeking to saved position: ${startPosition} for lecture ID: ${lectureData.id}`
         )
@@ -567,9 +651,13 @@ const VideoPlayer = () => {
           }, 200)
         }, 300)
       } else {
+        // This case handles:
+        // 1. Not completed, AND rememberPosition is false
+        // 2. Not completed, AND startPosition is 0 (new video or reset)
         console.log(
-          'Starting video from beginning due to settings or completed state'
+          'Starting video from beginning (not completed, and either no saved position, startPosition is 0, or rememberPosition is disabled).'
         )
+        player.currentTime(0) // Explicitly start at 0 for these cases too.
       }
 
       // Set up keyboard shortcuts
@@ -601,7 +689,8 @@ const VideoPlayer = () => {
       if (
         player.positionVerified ||
         !effectiveSettings.rememberPosition ||
-        startPosition <= 0
+        startPosition <= 0 ||
+        lectureData.completed
       ) {
         return
       }
@@ -716,6 +805,14 @@ const VideoPlayer = () => {
       try {
         console.log('Video started playing')
 
+        // If user has manually sought to a position, don't try to override it
+        if (player.recentlySought) {
+          console.log(
+            'Respecting user seek position, not forcing resume position'
+          )
+          return
+        }
+
         // Check for a saved position in various places, in order of preference:
         // 1. Direct player attribute (set by pause event)
         // 2. SessionStorage (backup)
@@ -782,6 +879,19 @@ const VideoPlayer = () => {
     player.on('seeking', function () {
       // If user is manually seeking, clear the pausedAt position
       player.pausedAt = undefined
+      player.lastKnownPosition = undefined
+
+      // Set a flag that user manually sought, which will prevent
+      // play handler from forcing position
+      player.recentlySought = true
+
+      // Clear the flag after a short delay so that future play events
+      // will work normally
+      clearTimeout(player.seekTimeout)
+      player.seekTimeout = setTimeout(() => {
+        player.recentlySought = false
+      }, 1000)
+
       try {
         sessionStorage.removeItem(`video_pause_position_${lectureData.id}`)
       } catch (e) {
@@ -810,6 +920,13 @@ const VideoPlayer = () => {
             completed: true,
             savedProgress: 0, // Reset saved progress when completed
           }))
+
+          // Rewind video to beginning after completion
+          try {
+            player.currentTime(0)
+          } catch (e) {
+            console.warn('Error rewinding video on ended:', e)
+          }
 
           // Auto-play next lecture if setting is enabled
           if (effectiveSettings.autoPlayNext) {
@@ -854,7 +971,7 @@ const VideoPlayer = () => {
               !lectureData.completed
             ) {
               console.log('Auto-marking lecture as completed')
-              ProgressManager.markLectureCompleted(lectureData.id)
+              ProgressManager.saveProgress(lectureData.id, currentTime, true)
               setLecture({ ...lectureData, completed: true })
             }
           }
@@ -1025,113 +1142,76 @@ const VideoPlayer = () => {
     }
   }, [lecture, loading, error])
 
-  // Get all lectures for this course to enable next/prev navigation
-  const navigateToLecture = async (direction) => {
-    if (!lecture || !lecture.courseId) {
-      console.error('No lecture or courseId available for navigation')
-      return
-    }
+  // Effect for handling click-to-navigate on the video player
+  useEffect(() => {
+    const videoContainer = videoRef.current
+    const player = playerRef.current
 
-    try {
-      // Load course data if needed
-      const courseData =
-        course || (await CourseManager.getCourseDetails(lecture.courseId))
-      if (!courseData || !courseData.sections) {
-        console.error('Could not load course data for navigation')
+    const handleClickToNavigate = (event) => {
+      if (!player || player.isFullscreen()) {
         return
       }
 
-      // Flatten all lectures from all sections
-      let allLectures = []
-      courseData.sections.forEach((section) => {
-        if (section.lectures) {
-          allLectures.push(...section.lectures)
+      // Ensure the click is directly on the video container or the video element itself,
+      // and not on the control bar elements.
+      let targetElement = event.target
+      let isControlBarClick = false
+      while (targetElement && targetElement !== videoContainer) {
+        if (targetElement.classList.contains('vjs-control-bar')) {
+          isControlBarClick = true
+          break
         }
-      })
-
-      // Sort lectures by section index and lecture index
-      allLectures.sort((a, b) => {
-        const sectionA = courseData.sections.find((s) => s.id === a.sectionId)
-        const sectionB = courseData.sections.find((s) => s.id === b.sectionId)
-
-        if (!sectionA || !sectionB) return 0
-
-        if (sectionA.index !== sectionB.index) {
-          return sectionA.index - sectionB.index
-        }
-
-        return a.index - b.index
-      })
-
-      console.log(
-        'All sorted lectures:',
-        allLectures.map((l) => l.title)
-      )
-
-      // Find current lecture index
-      const currentIndex = allLectures.findIndex((l) => l.id === lecture.id)
-      console.log('Current lecture index:', currentIndex, 'ID:', lecture.id)
-
-      if (currentIndex === -1) {
-        console.error('Current lecture not found in the course')
-        return
+        targetElement = targetElement.parentElement
       }
 
-      // Determine target lecture
-      let targetIndex = currentIndex
-      if (direction === 'next') {
-        targetIndex = Math.min(currentIndex + 1, allLectures.length - 1)
-      } else if (direction === 'prev') {
-        targetIndex = Math.max(currentIndex - 1, 0)
+      if (isControlBarClick) {
+        return // Do nothing if a control bar element was clicked
       }
 
-      // Don't navigate if we're already at the start/end
-      if (targetIndex === currentIndex) {
-        console.log(
-          `Already at the ${
-            direction === 'next' ? 'end' : 'beginning'
-          } of the course`
-        )
-        return
-      }
-
-      // Save progress before navigating
+      // Only proceed if the click was within the video container itself
+      // and not on a control element that might be an overlay
       if (
-        playerRef.current &&
-        typeof playerRef.current.currentTime === 'function'
+        event.target !== videoContainer &&
+        !event.target.classList.contains('vjs-tech') &&
+        !event.target.classList.contains('video-js')
       ) {
-        try {
-          // Save current progress
-          await ProgressManager.saveProgress(
-            lecture.id,
-            playerRef.current.currentTime()
-          )
-        } catch (err) {
-          console.error('Error saving progress:', err)
+        // Allow play/pause if clicking in the middle, even if not directly on vjs-tech
+        const playerWidth = videoContainer.offsetWidth
+        const clickX = event.offsetX
+        const clickPercentage = (clickX / playerWidth) * 100
+        if (clickPercentage >= 30 && clickPercentage <= 70) {
+          // This is a click in the middle, let video.js handle it (play/pause)
+        } else {
+          return // Click was on some other UI element within the player, not the video content area
         }
       }
 
-      // Clean up any intervals to prevent memory leaks
-      if (saveInterval) {
-        clearInterval(saveInterval)
-        setSaveInterval(null)
+      const playerWidth = videoContainer.offsetWidth
+      const clickX = event.offsetX
+      const clickPercentage = (clickX / playerWidth) * 100
+
+      if (clickPercentage < 30) {
+        event.preventDefault()
+        event.stopPropagation()
+        navigateToLecture('prev')
+      } else if (clickPercentage > 70) {
+        event.preventDefault()
+        event.stopPropagation()
+        navigateToLecture('next')
       }
-
-      const targetLecture = allLectures[targetIndex]
-      console.log(`Navigating to ${direction} lecture:`, targetLecture.title)
-
-      // Use state to force unmount of video player component
-      setLoading(true) // Show loading state
-
-      // Use a small timeout to ensure React has time to process state change
-      setTimeout(() => {
-        // Navigate to the target lecture
-        navigate(`/watch/${targetLecture.id}`)
-      }, 50)
-    } catch (error) {
-      console.error('Error navigating to lecture:', error)
+      // Middle 40% click is handled by video.js for play/pause
     }
-  }
+
+    if (videoContainer && player) {
+      videoContainer.addEventListener('click', handleClickToNavigate)
+    }
+
+    return () => {
+      if (videoContainer) {
+        videoContainer.removeEventListener('click', handleClickToNavigate)
+      }
+    }
+  }, [playerRef.current, videoRef.current, navigateToLecture]) // Dependencies
 
   // Render mini lecture item
   const renderMiniLectureItem = (miniLecture) => {
