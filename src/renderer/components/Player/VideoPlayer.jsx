@@ -875,8 +875,10 @@ const VideoPlayer = () => {
       }
     })
 
-    // Seeking event to track manual user seeking
+    // Reset the endDetected flag when seeking
     player.on('seeking', function () {
+      // Clear end detection flag when user seeks
+      player.endDetected = false
       // If user is manually seeking, clear the pausedAt position
       player.pausedAt = undefined
       player.lastKnownPosition = undefined
@@ -931,11 +933,61 @@ const VideoPlayer = () => {
           // Auto-play next lecture if setting is enabled
           if (effectiveSettings.autoPlayNext) {
             console.log('Auto-playing next video based on settings...')
-            setTimeout(() => navigateToLecture('next'), 1500) // Small delay before navigating
+            // Increased delay to ensure completion before navigation
+            player.pause() // Explicitly pause the player before navigating
+            setTimeout(() => navigateToLecture('next'), 500) // Reduced delay for better user experience
           }
         }
       } catch (error) {
         console.error('Error handling ended event:', error)
+      }
+    })
+
+    // Add a time update handler to detect when video is near the end
+    // This serves as a backup in case the 'ended' event doesn't fire properly
+    player.on('timeupdate', function () {
+      try {
+        if (
+          player &&
+          typeof player.duration === 'function' &&
+          typeof player.currentTime === 'function' &&
+          !player.endDetected
+        ) {
+          const duration = player.duration()
+          const currentTime = player.currentTime()
+
+          // If we're within 0.5 seconds of the end, consider it ended
+          if (duration > 0 && duration - currentTime <= 0.5) {
+            console.log(
+              'End detected via timeupdate, duration:',
+              duration,
+              'current:',
+              currentTime
+            )
+            player.endDetected = true // Flag to prevent multiple triggers
+
+            // Trigger our own ended logic
+            if (effectiveSettings.autoMarkCompleted) {
+              console.log('Auto-marking lecture as completed (via timeupdate)')
+              ProgressManager.saveProgress(lectureData.id, 0, true)
+
+              setLecture((prevLecture) => ({
+                ...prevLecture,
+                completed: true,
+                savedProgress: 0,
+              }))
+
+              // If auto-play next is enabled, navigate to next lecture
+              if (effectiveSettings.autoPlayNext) {
+                console.log('Auto-playing next video (via timeupdate)...')
+                player.pause() // Ensure playback is paused
+                setTimeout(() => navigateToLecture('next'), 500)
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error in timeupdate end detection:', error)
       }
     })
 
@@ -967,10 +1019,10 @@ const VideoPlayer = () => {
             if (
               effectiveSettings.autoMarkCompleted &&
               typeof currentPlayer.duration === 'function' &&
-              currentTime > currentPlayer.duration() * 0.9 &&
+              currentTime > currentPlayer.duration() * 0.98 &&
               !lectureData.completed
             ) {
-              console.log('Auto-marking lecture as completed')
+              console.log('Auto-marking lecture as completed (98% watched)')
               ProgressManager.saveProgress(lectureData.id, currentTime, true)
               setLecture({ ...lectureData, completed: true })
             }
