@@ -13,6 +13,8 @@
     "package": "npm run build && electron-builder build --mac --win --linux",
     "package:mac": "npm run build && electron-builder build --mac",
     "package:win": "npm run build && electron-builder build --win",
+    "package:win:x64": "npm run build && electron-builder build --win --x64",
+    "package:win:arm64": "npm run build && electron-builder build --win --arm64",
     "package:linux": "npm run build && electron-builder build --linux"
   },
   "keywords": [],
@@ -38,7 +40,13 @@
     },
     "win": {
       "target": [
-        "nsis"
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
       ]
     },
     "linux": {
