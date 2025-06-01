@@ -211,21 +211,49 @@ const VideoPlayer = () => {
         const targetLecture = allLectures[targetIndex]
         console.log(`Navigating to ${direction} lecture:`, targetLecture.title)
 
-        // Simple direct navigation - just like click navigation
-        setLoading(true) // Show loading state
+        // Clear session storage for the current lecture before navigation
+        try {
+          sessionStorage.removeItem(`video_pause_position_${lecture.id}`)
+        } catch (e) {
+          console.error('Error clearing sessionStorage during navigation:', e)
+        }
 
-        // Cleanup player before navigation
+        // Show loading state
+        setLoading(true)
+
+        // Thorough cleanup of player before navigation
         if (playerRef.current) {
           try {
+            // Ensure player is paused first
             playerRef.current.pause()
+
+            // Remove any video source to prevent old video from showing
+            if (typeof playerRef.current.src === 'function') {
+              playerRef.current.src({ src: '', type: '' })
+            }
+
+            // Dispose the player completely
             playerRef.current.dispose()
             playerRef.current = null
+
+            console.log('Player successfully disposed before navigation')
           } catch (e) {
             console.warn('Error cleaning up player:', e)
           }
         }
 
-        // Direct navigation - like the click handler
+        // Reset video element reference
+        if (videoRef.current) {
+          try {
+            // Reset HTML to create a fresh video element container
+            videoRef.current.innerHTML =
+              '<video id="video-player" class="video-js vjs-big-play-centered"></video>'
+          } catch (e) {
+            console.warn('Error resetting video container:', e)
+          }
+        }
+
+        // Direct navigation to the new lecture
         navigate(`/watch/${targetLecture.id}`)
       } catch (error) {
         console.error('Error navigating to lecture:', error)
@@ -320,13 +348,13 @@ const VideoPlayer = () => {
         let savedPos = 0
 
         // Always start from beginning if lecture is completed
-        if (progress.completed && routeState.startPosition === undefined) {
+        if (progress.watched === 1 && routeState.startPosition === undefined) {
           console.log('Lecture was completed, starting from beginning')
           savedPos = 0
         } else if (routeState.startPosition !== undefined) {
           // If specific position provided via routing, use that
           savedPos = routeState.startPosition
-        } else if (progress.position > 0 && !progress.completed) {
+        } else if (progress.position > 0 && progress.watched !== 1) {
           // Only use stored position if not completed
           savedPos = progress.position
         }
@@ -334,7 +362,7 @@ const VideoPlayer = () => {
         console.log(`Loading saved progress for lecture ${lectureData.id}:`, {
           routeStatePosition: routeState.startPosition,
           dbPosition: progress.position,
-          isCompleted: progress.completed,
+          isCompleted: progress.watched === 1,
           finalPosition: savedPos,
         })
 
@@ -343,7 +371,7 @@ const VideoPlayer = () => {
           ...lectureData,
           videoUrl: routeState.videoUrl || createVideoUrl(lectureData.filePath),
           savedProgress: savedPos,
-          completed: progress.completed || false,
+          completed: progress.watched === 1,
         }
         setLecture(lectureWithProgress)
 
@@ -501,6 +529,19 @@ const VideoPlayer = () => {
         'Video element not found in initializePlayer. DOM might not be ready yet.'
       )
       return null
+    }
+
+    // Force starting position to 0 for completed videos regardless of saved progress
+    if (lectureData.completed) {
+      console.log('Lecture is completed, forcing start position to 0')
+      startPosition = 0
+
+      // Clear any stored positions for this lecture to ensure a clean restart
+      try {
+        sessionStorage.removeItem(`video_pause_position_${lectureData.id}`)
+      } catch (e) {
+        console.error('Error clearing sessionStorage:', e)
+      }
     }
 
     // Check if player is already initialized
@@ -775,94 +816,103 @@ const VideoPlayer = () => {
       }
     })
 
-    // Add a timeupdate listener for additional verification of position
+    // Auto-navigation decision via timeupdate handling
     player.on('timeupdate', function () {
       try {
-        if (
-          player &&
-          typeof player.duration === 'function' &&
-          typeof player.currentTime === 'function'
-        ) {
-          const currentTime = player.currentTime()
-          const duration = player.duration()
+        const currentTime = player.currentTime()
+        const duration = player.duration() || 0
 
-          // First handle position verification (only in the first few timeupdate events)
+        // Save the current position regularly as a backup
+        if (!lectureData.completed) {
+          player.lastKnownPosition = currentTime
+        }
+
+        // First check if we need to verify position during initial playback
+        if (!player.positionVerified) {
+          // Only verify position within first 3 seconds of playback
+          const now = Date.now()
           if (
-            !player.positionVerified &&
-            effectiveSettings.rememberPosition &&
-            startPosition > 0 &&
-            !lectureData.completed
+            player.playbackStartTime &&
+            now - player.playbackStartTime <= 3000
           ) {
-            // Get current timestamp
-            const now = Date.now()
-
-            // Only check within the first 3 seconds of playback
-            if (
-              player.playbackStartTime &&
-              now - player.playbackStartTime <= 3000
-            ) {
-              // Verify position is correct
-              if (Math.abs(currentTime - startPosition) > 0.5) {
-                console.log(
-                  'Position check failed in timeupdate, correcting to:',
-                  startPosition
-                )
-                player.currentTime(startPosition)
-              } else {
-                console.log('Position verified in timeupdate')
-                player.positionVerified = true
-              }
+            // Verify position is correct
+            if (Math.abs(currentTime - startPosition) > 0.5) {
+              console.log(
+                'Position check failed in timeupdate, correcting to:',
+                startPosition
+              )
+              player.currentTime(startPosition)
             } else {
-              // Time window for verification has passed
+              console.log('Position verified in timeupdate')
               player.positionVerified = true
             }
+          } else {
+            // Time window for verification has passed
+            player.positionVerified = true
           }
+        }
 
-          // Next handle end detection
-          if (
-            !player.endDetected &&
-            duration > 0 &&
-            duration - currentTime <= 0.5
-          ) {
-            console.log(
-              'End detected via timeupdate, duration:',
-              duration,
-              'current:',
-              currentTime
-            )
-            player.endDetected = true // Flag to prevent multiple triggers
+        // Next handle end detection
+        if (
+          !player.endDetected &&
+          duration > 0 &&
+          duration - currentTime <= 0.5
+        ) {
+          console.log(
+            'End detected via timeupdate, duration:',
+            duration,
+            'current:',
+            currentTime
+          )
+          player.endDetected = true // Flag to prevent multiple triggers
 
-            // Trigger our own ended logic
-            if (effectiveSettings.autoMarkCompleted) {
-              console.log('Auto-marking lecture as completed (via timeupdate)')
-              // Always save position as 0 when completed
-              ProgressManager.saveProgress(lectureData.id, 0, true)
+          // Trigger our own ended logic
+          if (effectiveSettings.autoMarkCompleted) {
+            console.log('Auto-marking lecture as completed (via timeupdate)')
+            // Always save position as 0 when completed
+            ProgressManager.saveProgress(lectureData.id, 0, true)
 
-              setLecture((prevLecture) => ({
-                ...prevLecture,
-                completed: true,
-                savedProgress: 0,
-              }))
+            setLecture((prevLecture) => ({
+              ...prevLecture,
+              completed: true,
+              savedProgress: 0,
+            }))
 
-              // If auto-play next is enabled, navigate to next lecture
-              // Removed initialLoad check to ensure navigation works
-              if (effectiveSettings.autoPlayNext) {
-                console.log('Auto-playing next video (via timeupdate)...')
-                try {
-                  player.pause() // Ensure playback is paused
+            // Check if we should auto-navigate to next lecture
+            const wasCompletedBefore = lectureData.completed
+            const hadProgressBefore = lectureData.savedProgress > 0
+            const settingEnabled = effectiveSettings.autoPlayNext
 
-                  // Use a separate flag to track if navigation is already in progress
-                  if (!player.navigationInProgress) {
-                    player.navigationInProgress = true
+            console.log('Auto-navigation decision via timeupdate:', {
+              wasCompletedBefore,
+              hadProgressBefore,
+              settingEnabled,
+            })
 
-                    // Simply navigate directly to the next lecture like the click handler does
-                    console.log('Directly navigating to next lecture')
-                    navigateToLecture('next')
-                  }
-                } catch (e) {
-                  console.error('Error during auto-navigation:', e)
+            // Only auto-navigate if setting is enabled AND either:
+            // 1. Lecture wasn't already completed, OR
+            // 2. User explicitly started a completed lecture (meaning they want to see next)
+            if (settingEnabled && (!wasCompletedBefore || !hadProgressBefore)) {
+              console.log(
+                'Auto-navigating to next lecture (timeupdate trigger)'
+              )
+              try {
+                player.pause() // Ensure playback is paused
+
+                // Use a separate flag to track if navigation is already in progress
+                if (!player.navigationInProgress) {
+                  player.navigationInProgress = true
+
+                  // Simply navigate directly to the next lecture like the click handler does
+                  navigateToLecture('next')
                 }
+              } catch (e) {
+                console.error('Error during auto-navigation:', e)
               }
+            } else {
+              console.log(
+                'Not auto-navigating: video was already completed, had progress, or setting is disabled'
+              )
             }
           }
         }
@@ -923,6 +973,19 @@ const VideoPlayer = () => {
 
     // Pause event handler with safety check
     player.on('pause', function () {
+      // If lecture is completed, preserve completion and reset position to 0
+      if (lectureData.completed) {
+        console.log(
+          'Lecture completed, ignoring pause event and ensuring it remains completed'
+        )
+        try {
+          // Save progress as completed at position 0
+          ProgressManager.saveProgress(lectureData.id, 0, true)
+        } catch (e) {
+          console.error('Error saving completed progress on pause:', e)
+        }
+        return
+      }
       try {
         if (player && typeof player.currentTime === 'function') {
           const currentTime = player.currentTime()
@@ -955,6 +1018,28 @@ const VideoPlayer = () => {
 
     // Add a specific play event handler to ensure resume from correct position
     player.on('play', function () {
+      // If lecture is completed, always start from 0 when replaying
+      if (lectureData.completed) {
+        console.log(
+          'Lecture completed, user replaying, resetting playback to 0'
+        )
+        try {
+          player.currentTime(0)
+        } catch (e) {
+          console.warn('Error resetting time for completed lecture on play:', e)
+        }
+        // Clear any stored resume positions
+        player.pausedAt = undefined
+        try {
+          sessionStorage.removeItem(`video_pause_position_${lectureData.id}`)
+        } catch (e) {
+          console.error(
+            'Error clearing sessionStorage for completed lecture on play:',
+            e
+          )
+        }
+        return
+      }
       try {
         console.log('Video started playing')
 
@@ -1284,10 +1369,16 @@ const VideoPlayer = () => {
       }
 
       // Check if video element exists before trying to initialize
-      const videoElement = videoRef.current.querySelector('video#video-player')
+      // Try multiple different selector strategies to find the video element
+      const videoElement =
+        videoRef.current.querySelector('video#video-player') ||
+        videoRef.current.querySelector('video') ||
+        document.getElementById('video-player')
+
       if (videoElement) {
+        console.log('Video element found, proceeding with initialization')
         // Initialize the player with the lecture data
-        const startPosition = lecture.savedProgress || 0
+        const startPosition = lecture.completed ? 0 : lecture.savedProgress || 0
         console.log(
           'Starting player initialization with position:',
           startPosition
@@ -1637,9 +1728,6 @@ const VideoPlayer = () => {
 
                           // This is an explicit user action, so disable initialLoad protection
                           setInitialLoad(false)
-
-                          // If marking as complete, trigger navigation to next lecture
-                          navigateToLecture('next')
                         } else {
                           // When marking as incomplete, save current position
                           let currentPos = 0
