@@ -531,19 +531,6 @@ const VideoPlayer = () => {
       return null
     }
 
-    // Force starting position to 0 for completed videos regardless of saved progress
-    if (lectureData.completed) {
-      console.log('Lecture is completed, forcing start position to 0')
-      startPosition = 0
-
-      // Clear any stored positions for this lecture to ensure a clean restart
-      try {
-        sessionStorage.removeItem(`video_pause_position_${lectureData.id}`)
-      } catch (e) {
-        console.error('Error clearing sessionStorage:', e)
-      }
-    }
-
     // Check if player is already initialized
     if (playerRef.current) {
       console.log(
@@ -699,16 +686,7 @@ const VideoPlayer = () => {
       }
 
       // Make sure to set the correct time after player is ready
-      if (lectureData.completed) {
-        console.log(
-          'Lecture is completed. Setting player to start at 0 on ready.'
-        )
-        try {
-          playerRef.current.currentTime(0)
-        } catch (e) {
-          console.warn('Error setting time for completed lecture:', e)
-        }
-      } else if (effectiveSettings.rememberPosition && startPosition > 0) {
+      if (effectiveSettings.rememberPosition && startPosition > 0) {
         console.log(
           `Seeking to saved position: ${startPosition} for lecture ID: ${lectureData.id}`
         )
@@ -1014,28 +992,6 @@ const VideoPlayer = () => {
 
     // Add a specific play event handler to ensure resume from correct position
     player.on('play', function () {
-      // If lecture is completed, always start from 0 when replaying
-      if (lectureData.completed) {
-        console.log(
-          'Lecture completed, user replaying, resetting playback to 0'
-        )
-        try {
-          player.currentTime(0)
-        } catch (e) {
-          console.warn('Error resetting time for completed lecture on play:', e)
-        }
-        // Clear any stored resume positions
-        player.pausedAt = undefined
-        try {
-          sessionStorage.removeItem(`video_pause_position_${lectureData.id}`)
-        } catch (e) {
-          console.error(
-            'Error clearing sessionStorage for completed lecture on play:',
-            e
-          )
-        }
-        return
-      }
       try {
         console.log('Video started playing')
 
