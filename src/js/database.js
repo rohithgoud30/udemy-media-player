@@ -306,6 +306,31 @@ export const ProgressManager = {
         : 0,
     };
   },
+
+  // Save the last played lecture for a course
+  async saveLastPlayedLecture(courseId, lectureId) {
+    try {
+      // Store in localStorage for quick access
+      localStorage.setItem(`lastPlayed_${courseId}`, lectureId.toString());
+
+      // Could also store in IndexedDB if needed for persistence
+      return true;
+    } catch (error) {
+      console.error("Error saving last played lecture:", error);
+      return false;
+    }
+  },
+
+  // Get the last played lecture for a course
+  async getLastPlayedLecture(courseId) {
+    try {
+      const lectureId = localStorage.getItem(`lastPlayed_${courseId}`);
+      return lectureId ? parseInt(lectureId) : null;
+    } catch (error) {
+      console.error("Error getting last played lecture:", error);
+      return null;
+    }
+  },
 };
 
 export default db;

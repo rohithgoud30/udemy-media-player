@@ -337,6 +337,17 @@ const VideoPlayer = () => {
 
         console.log("Found lecture:", lectureData);
 
+        // Save this as the last played lecture for the course
+        if (lectureData.courseId) {
+          await ProgressManager.saveLastPlayedLecture(
+            lectureData.courseId,
+            lectureData.id
+          );
+          console.log(
+            `Saved lecture ${lectureData.id} as last played for course ${lectureData.courseId}`
+          );
+        }
+
         // Ensure filePath exists after overrides
         if (!lectureData.filePath) {
           setError(`No file path found for lecture ${lectureId}`);

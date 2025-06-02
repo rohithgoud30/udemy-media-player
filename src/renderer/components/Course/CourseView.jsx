@@ -12,6 +12,7 @@ const CourseView = () => {
   const [expandedSections, setExpandedSections] = useState({});
   const [courseDurations, setCourseDurations] = useState(null);
   const [updatingDurations, setUpdatingDurations] = useState(false);
+  const [lastPlayedLectureId, setLastPlayedLectureId] = useState(null);
 
   // Load course data and progress
   useEffect(() => {
@@ -46,10 +47,42 @@ const CourseView = () => {
         console.log("Course durations:", durations);
         setCourseDurations(durations);
 
-        // Set only the first section expanded by default
+        // Get the last played lecture
+        const lastPlayedId = await ProgressManager.getLastPlayedLecture(
+          parseInt(courseId)
+        );
+        console.log("Last played lecture ID:", lastPlayedId);
+        setLastPlayedLectureId(lastPlayedId);
+
+        // Set expanded sections based on last played lecture
         const expanded = {};
-        if (courseData.sections && courseData.sections.length > 0) {
-          // Get the first section by index (not ID)
+        if (lastPlayedId) {
+          // Find the section containing the last played lecture
+          let sectionFound = false;
+          for (const section of courseData.sections) {
+            if (
+              section.lectures.some((lecture) => lecture.id === lastPlayedId)
+            ) {
+              expanded[section.id] = true;
+              sectionFound = true;
+              console.log(
+                `Expanding section ${section.title} containing last played lecture`
+              );
+              break;
+            }
+          }
+
+          // If we couldn't find the section, default to first section
+          if (!sectionFound && courseData.sections.length > 0) {
+            const firstSection =
+              courseData.sections.find((s) => s.index === 0) ||
+              courseData.sections[0];
+            if (firstSection) {
+              expanded[firstSection.id] = true;
+            }
+          }
+        } else if (courseData.sections && courseData.sections.length > 0) {
+          // Default to expanding first section if no last played lecture
           const firstSection =
             courseData.sections.find((s) => s.index === 0) ||
             courseData.sections[0];
@@ -57,6 +90,7 @@ const CourseView = () => {
             expanded[firstSection.id] = true;
           }
         }
+
         setExpandedSections(expanded);
 
         // Load progress for all lectures
@@ -267,9 +301,15 @@ const CourseView = () => {
                       : progress.watched === 0.5
                       ? "partial"
                       : "unwatched";
+                  const isLastPlayed = lecture.id === lastPlayedLectureId;
 
                   return (
-                    <div key={lecture.id} className={`lecture ${watchStatus}`}>
+                    <div
+                      key={lecture.id}
+                      className={`lecture ${watchStatus} ${
+                        isLastPlayed ? "last-played" : ""
+                      }`}
+                    >
                       <div className="lecture-info">
                         <button
                           className={`watch-toggle ${watchStatus}`}
@@ -288,6 +328,11 @@ const CourseView = () => {
                           className="lecture-title"
                         >
                           {lecture.title}
+                          {isLastPlayed && (
+                            <span className="last-played-badge">
+                              Last Played
+                            </span>
+                          )}
                           {lecture.duration > 0 && (
                             <span className="lecture-duration">
                               {formatDuration(lecture.duration)}
