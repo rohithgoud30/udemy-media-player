@@ -628,10 +628,8 @@ const VideoPlayer = () => {
       ...(routeState.playerSettings || {}),
     }
 
-    // Ensure muted attribute is properly set for autoplay
-    if (effectiveSettings.autoPlay) {
-      videoElement.setAttribute('muted', '')
-    }
+    // Ensure audio is on by default
+    videoElement.muted = false
 
     // Dispose any existing player first - extra safety check
     if (playerRef.current) {
@@ -780,11 +778,9 @@ const VideoPlayer = () => {
             })
             .catch((error) => {
               console.warn('Auto-play prevented by browser:', error)
-              // If autoplay fails, we can try muting the video and playing again
-              // as many browsers allow muted autoplay
-              player.muted(true)
+              // Autoplay with audio blocked; user must click to play audio
               player.play().catch((e) => {
-                console.error('Even muted autoplay failed:', e)
+                console.error('Play failed after autoplay block:', e)
               })
             })
         }
