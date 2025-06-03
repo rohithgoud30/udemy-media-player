@@ -11,7 +11,6 @@ const CourseView = () => {
   const [lectureProgress, setLectureProgress] = useState({});
   const [expandedSections, setExpandedSections] = useState({});
   const [courseDurations, setCourseDurations] = useState(null);
-  const [updatingDurations, setUpdatingDurations] = useState(false);
   const [lastPlayedLectureId, setLastPlayedLectureId] = useState(null);
 
   // Load course data and progress
@@ -187,28 +186,6 @@ const CourseView = () => {
     }
   };
 
-  // Function to manually update durations
-  const refreshDurations = async () => {
-    try {
-      setUpdatingDurations(true);
-      const updated = await CourseManager.updateLectureDurations(
-        parseInt(courseId)
-      );
-
-      if (updated) {
-        // Reload durations
-        const durations = await CourseManager.getCourseDurations(
-          parseInt(courseId)
-        );
-        setCourseDurations(durations);
-      }
-    } catch (error) {
-      console.error("Error refreshing durations:", error);
-    } finally {
-      setUpdatingDurations(false);
-    }
-  };
-
   if (loading) {
     return <div className="loading">Loading course details...</div>;
   }
@@ -238,13 +215,6 @@ const CourseView = () => {
       <div className="course-header">
         <h1>{course.title}</h1>
         <div className="course-actions">
-          <button
-            className="refresh-durations-button"
-            onClick={refreshDurations}
-            disabled={updatingDurations}
-          >
-            {updatingDurations ? "Updating..." : "Refresh Durations"}
-          </button>
           <Link to="/" className="back-button">
             ← Back to Library
           </Link>

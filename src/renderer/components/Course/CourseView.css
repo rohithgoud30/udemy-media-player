@@ -263,25 +263,6 @@
   align-items: center;
 }
 
-.refresh-durations-button {
-  padding: 8px 16px;
-  background-color: #4caf50;
-  border: none;
-  border-radius: 4px;
-  color: white;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.refresh-durations-button:hover {
-  background-color: #45a049;
-}
-
-.refresh-durations-button:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
-}
-
 .lecture.last-played {
   background-color: rgba(74, 134, 232, 0.1);
   border-left: 3px solid #4a86e8;
