@@ -22,7 +22,7 @@
 
 .video-container::before,
 .video-container::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   height: 100%;
@@ -470,4 +470,46 @@
   background-color: var(--background-card);
   color: var(--primary-hover);
   border-color: var(--primary-hover);
+}
+
+/* Fullscreen Navigation Buttons */
+.fullscreen-prev-button,
+.fullscreen-next-button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 100;
+  opacity: 0;
+  transition: opacity 0.3s ease, background-color 0.3s ease, transform 0.2s ease;
+}
+
+.fullscreen-prev-button {
+  left: 30px;
+}
+
+.fullscreen-next-button {
+  right: 30px;
+}
+
+.video-js:hover .fullscreen-prev-button,
+.video-js:hover .fullscreen-next-button {
+  opacity: 0.7;
+}
+
+.fullscreen-prev-button:hover,
+.fullscreen-next-button:hover {
+  opacity: 1 !important;
+  background-color: var(--primary-color);
+  transform: translateY(-50%) scale(1.1);
 }

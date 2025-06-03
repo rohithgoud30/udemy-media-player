@@ -1261,6 +1261,28 @@ const VideoPlayer = () => {
     // Store the interval ID for cleanup
     setSaveInterval(progressTracker);
 
+    // Add fullscreen navigation buttons
+    addFullscreenNavigationButtons(player);
+
+    // Add event listener for fullscreen change
+    player.on("fullscreenchange", function () {
+      console.log("Fullscreen state changed:", player.isFullscreen());
+
+      // Show/hide the fullscreen navigation buttons
+      const prevButton = player.el().querySelector(".fullscreen-prev-button");
+      const nextButton = player.el().querySelector(".fullscreen-next-button");
+
+      if (prevButton && nextButton) {
+        if (player.isFullscreen()) {
+          prevButton.style.display = "flex";
+          nextButton.style.display = "flex";
+        } else {
+          prevButton.style.display = "none";
+          nextButton.style.display = "none";
+        }
+      }
+    });
+
     // Add event listener for video end
     player.on("ended", function () {
       console.log("Video playback ended");
@@ -1271,6 +1293,39 @@ const VideoPlayer = () => {
         navigateToLecture("next");
       }
     });
+  };
+
+  // Function to add fullscreen navigation buttons
+  const addFullscreenNavigationButtons = (player) => {
+    // Create previous button
+    const prevButton = document.createElement("button");
+    prevButton.className = "fullscreen-prev-button";
+    prevButton.innerHTML = "◀";
+    prevButton.title = "Previous Lecture";
+    prevButton.style.display = player.isFullscreen() ? "flex" : "none";
+
+    // Create next button
+    const nextButton = document.createElement("button");
+    nextButton.className = "fullscreen-next-button";
+    nextButton.innerHTML = "▶";
+    nextButton.title = "Next Lecture";
+    nextButton.style.display = player.isFullscreen() ? "flex" : "none";
+
+    // Add click event listeners
+    prevButton.addEventListener("click", (e) => {
+      e.stopPropagation();
+      navigateToLecture("prev");
+    });
+
+    nextButton.addEventListener("click", (e) => {
+      e.stopPropagation();
+      navigateToLecture("next");
+    });
+
+    // Add buttons to the player container
+    const playerContainer = player.el();
+    playerContainer.appendChild(prevButton);
+    playerContainer.appendChild(nextButton);
   };
 
   // Separate effect for player initialization
