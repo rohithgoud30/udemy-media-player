@@ -303,15 +303,15 @@ const CourseView = () => {
                               Last Played
                             </span>
                           )}
-                          {lecture.duration > 0 && (
-                            <span className="lecture-duration">
-                              {formatDuration(lecture.duration)}
-                            </span>
-                          )}
                         </Link>
                       </div>
 
                       <div className="lecture-actions">
+                        {lecture.duration > 0 && (
+                          <span className="lecture-duration">
+                            {formatDuration(lecture.duration)}
+                          </span>
+                        )}
                         <Link
                           to={`/watch/${lecture.id}`}
                           className={`play-button ${
@@ -404,16 +404,20 @@ function formatTime(seconds) {
 
 // Add a helper function to format duration
 function formatDuration(seconds) {
-  if (!seconds) return "0:00:00";
+  if (!seconds) return "0 mins";
 
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
-  const remainingSeconds = Math.floor(seconds % 60);
 
-  // Always include hours regardless of value
-  return `${hours}:${minutes.toString().padStart(2, "0")}:${remainingSeconds
-    .toString()
-    .padStart(2, "0")}`;
+  if (hours === 0) {
+    // Only show minutes if less than an hour
+    return `${minutes} ${minutes === 1 ? "min" : "mins"}`;
+  } else {
+    // Show hours and minutes for longer videos
+    return `${hours} ${hours === 1 ? "hr" : "hrs"} ${minutes} ${
+      minutes === 1 ? "min" : "mins"
+    }`;
+  }
 }
 
 export default CourseView;

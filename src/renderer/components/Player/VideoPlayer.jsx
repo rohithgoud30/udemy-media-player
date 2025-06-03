@@ -91,6 +91,24 @@ const createVideoUrl = (filePath) => {
   }
 };
 
+// Add a helper function to format duration
+const formatDuration = (seconds) => {
+  if (!seconds) return "";
+
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+
+  if (hours === 0) {
+    // Only show minutes if less than an hour
+    return `${minutes} ${minutes === 1 ? "min" : "mins"}`;
+  } else {
+    // Show hours and minutes for longer videos
+    return `${hours} ${hours === 1 ? "hr" : "hrs"} ${minutes} ${
+      minutes === 1 ? "min" : "mins"
+    }`;
+  }
+};
+
 const VideoPlayer = () => {
   const { lectureId } = useParams();
   const navigate = useNavigate();
@@ -1561,7 +1579,14 @@ const VideoPlayer = () => {
         </div>
         <div className="mini-lecture-info">
           <div className="mini-lecture-title">{miniLecture.title}</div>
-          <div className="mini-lecture-section">{miniLecture.sectionTitle}</div>
+          <div className="mini-lecture-section">
+            {miniLecture.sectionTitle}
+            {miniLecture.duration > 0 && (
+              <span className="mini-lecture-duration">
+                {formatDuration(miniLecture.duration)}
+              </span>
+            )}
+          </div>
         </div>
       </div>
     );

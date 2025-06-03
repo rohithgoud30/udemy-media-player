@@ -115,6 +115,7 @@
   align-items: center;
   flex: 1;
   overflow: hidden;
+  justify-content: space-between;
 }
 
 .watch-toggle {
@@ -150,6 +151,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex: 1;
 }
 
 .lecture.watched .lecture-title {
@@ -165,6 +167,7 @@
   align-items: center;
   margin-left: 15px;
   flex-shrink: 0;
+  gap: 8px;
 }
 
 .resume-indicator {
@@ -251,10 +254,18 @@
 }
 
 .lecture-duration {
-  margin-left: 10px;
+  margin-left: 0;
+  margin-right: 0;
   font-size: 12px;
   color: #777;
   font-weight: normal;
+  padding: 3px 8px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .course-actions {
