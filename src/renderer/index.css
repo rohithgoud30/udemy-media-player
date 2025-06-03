@@ -276,7 +276,11 @@ a:hover {
 /* Import Course */
 .import-container {
   max-width: 800px;
-  margin: 0 auto;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: var(--background-card);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .import-instructions {
@@ -334,6 +338,50 @@ a:hover {
 .import-progress {
   text-align: center;
   padding: 2rem;
+}
+
+/* Add new styles for the import loading screen */
+.import-loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--background-dark);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.import-loading-content {
+  background-color: var(--background-card);
+  border-radius: 8px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  text-align: center;
+}
+
+.import-loading-content h2 {
+  margin-bottom: 1.5rem;
+  font-size: 1.8rem;
+  color: var(--text-color);
+}
+
+.import-loading-content .progress-container {
+  margin-bottom: 1rem;
+}
+
+.import-loading-content .progress-bar {
+  height: 10px;
+  margin-bottom: 1rem;
+}
+
+.import-loading-content .progress-text {
+  font-size: 1rem;
+  margin-bottom: 0;
 }
 
 /* Course View */
