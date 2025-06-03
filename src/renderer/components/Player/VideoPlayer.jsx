@@ -1578,7 +1578,9 @@ const VideoPlayer = () => {
           {isActive ? "▶" : isCompleted ? "✓" : "○"}
         </div>
         <div className="mini-lecture-info">
-          <div className="mini-lecture-title">{miniLecture.title}</div>
+          <div className="mini-lecture-title" title={miniLecture.title}>
+            {miniLecture.title}
+          </div>
           <div className="mini-lecture-section">
             {miniLecture.sectionTitle}
             {miniLecture.duration > 0 && (
@@ -1722,10 +1724,12 @@ const VideoPlayer = () => {
         <div className="player-header-collapsed">
           {lecture && (
             <>
-              <h1 className="lecture-title-top">{lecture.title}</h1>
+              <h1 className="lecture-title-top" title={lecture.title}>
+                {lecture.title}
+              </h1>
               {course && (
                 <div className="course-header-row">
-                  <div className="course-title">
+                  <div className="course-title" title={course.title}>
                     <strong>Course:</strong> {course.title}
                   </div>
                   <button
@@ -1869,11 +1873,11 @@ const VideoPlayer = () => {
               <h3>Details</h3>
               {lecture && (
                 <>
-                  <p>
+                  <p title={lecture.title}>
                     <strong>Lecture:</strong> {lecture.title}
                   </p>
                   {course && (
-                    <p>
+                    <p title={course.title}>
                       <strong>Course:</strong> {course.title}
                     </p>
                   )}

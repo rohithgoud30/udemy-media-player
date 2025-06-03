@@ -213,7 +213,7 @@ const CourseView = () => {
   return (
     <div className="course-view">
       <div className="course-header">
-        <h1>{course.title}</h1>
+        <h1 title={course.title}>{course.title}</h1>
         <div className="course-actions">
           <Link to="/" className="back-button">
             ← Back to Library
@@ -296,6 +296,7 @@ const CourseView = () => {
                         <Link
                           to={`/watch/${lecture.id}`}
                           className="lecture-title"
+                          title={lecture.title}
                         >
                           {lecture.title}
                           {isLastPlayed && (

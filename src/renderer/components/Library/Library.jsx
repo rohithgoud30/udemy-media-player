@@ -1,26 +1,29 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ProgressManager } from '../../../js/database';
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { ProgressManager } from "../../../js/database";
 
 const Library = ({ courses, loading, onDeleteCourse }) => {
-  const [filter, setFilter] = useState('');
-  const [sortBy, setSortBy] = useState('dateAdded');
+  const [filter, setFilter] = useState("");
+  const [sortBy, setSortBy] = useState("dateAdded");
   const [courseProgress, setCourseProgress] = useState({});
 
   // Load progress information for all courses
   React.useEffect(() => {
     async function loadAllProgress() {
       const progressData = {};
-      
+
       for (const course of courses) {
         try {
           const progress = await ProgressManager.getCourseProgress(course.id);
           progressData[course.id] = progress;
         } catch (error) {
-          console.error(`Failed to load progress for course ${course.id}:`, error);
+          console.error(
+            `Failed to load progress for course ${course.id}:`,
+            error
+          );
         }
       }
-      
+
       setCourseProgress(progressData);
     }
 
@@ -31,13 +34,13 @@ const Library = ({ courses, loading, onDeleteCourse }) => {
 
   // Filter and sort courses
   const filteredCourses = courses
-    .filter(course => 
+    .filter((course) =>
       course.title.toLowerCase().includes(filter.toLowerCase())
     )
     .sort((a, b) => {
-      if (sortBy === 'title') {
+      if (sortBy === "title") {
         return a.title.localeCompare(b.title);
-      } else if (sortBy === 'dateAdded') {
+      } else if (sortBy === "dateAdded") {
         return new Date(b.dateAdded) - new Date(a.dateAdded);
       }
       return 0;
@@ -56,13 +59,13 @@ const Library = ({ courses, loading, onDeleteCourse }) => {
             type="text"
             placeholder="Search courses..."
             value={filter}
-            onChange={e => setFilter(e.target.value)}
+            onChange={(e) => setFilter(e.target.value)}
             className="search-input"
           />
-          
-          <select 
-            value={sortBy} 
-            onChange={e => setSortBy(e.target.value)}
+
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
             className="sort-select"
           >
             <option value="dateAdded">Sort by Date Added</option>
@@ -70,17 +73,19 @@ const Library = ({ courses, loading, onDeleteCourse }) => {
           </select>
         </div>
       </div>
-      
+
       {filteredCourses.length === 0 ? (
         <div className="empty-library">
           <p>Your library is empty. Import a course to get started.</p>
-          <Link to="/import" className="import-button">Import Course</Link>
+          <Link to="/import" className="import-button">
+            Import Course
+          </Link>
         </div>
       ) : (
         <div className="courses-grid">
-          {filteredCourses.map(course => (
-            <CourseCard 
-              key={course.id} 
+          {filteredCourses.map((course) => (
+            <CourseCard
+              key={course.id}
               course={course}
               progress={courseProgress[course.id]}
               onDelete={() => onDeleteCourse(course.id)}
@@ -95,7 +100,7 @@ const Library = ({ courses, loading, onDeleteCourse }) => {
 // Individual course card component
 const CourseCard = ({ course, progress, onDelete }) => {
   const progressPercentage = progress ? progress.completionPercentage : 0;
-  
+
   return (
     <div className="course-card">
       <div className="course-thumbnail">
@@ -104,24 +109,24 @@ const CourseCard = ({ course, progress, onDelete }) => {
           {course.title.charAt(0).toUpperCase()}
         </div>
       </div>
-      
+
       <div className="course-info">
-        <h3 className="course-title">{course.title}</h3>
-        
+        <h3 className="course-title" title={course.title}>
+          {course.title}
+        </h3>
+
         <div className="course-meta">
           <span>Added: {new Date(course.dateAdded).toLocaleDateString()}</span>
         </div>
-        
+
         <div className="progress-bar">
-          <div 
-            className="progress-fill" 
+          <div
+            className="progress-fill"
             style={{ width: `${progressPercentage}%` }}
           ></div>
         </div>
-        <div className="progress-text">
-          {progressPercentage}% Complete
-        </div>
-        
+        <div className="progress-text">{progressPercentage}% Complete</div>
+
         <div className="course-actions">
           <Link to={`/course/${course.id}`} className="view-button">
             View Course
