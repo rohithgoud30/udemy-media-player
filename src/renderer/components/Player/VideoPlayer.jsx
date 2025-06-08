@@ -672,7 +672,10 @@ const VideoPlayer = () => {
           autoplay: effectiveSettings.autoPlay,
           preload: "auto",
           fluid: true,
-          playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2],
+          playbackRates: [
+            0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5,
+            3.75, 4,
+          ],
           techOrder: ["html5"], // Prefer HTML5 tech for better local file support
           html5: {
             nativeAudioTracks: true,
