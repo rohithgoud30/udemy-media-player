@@ -136,6 +136,7 @@ const ModernVideoPlayer = () => {
   }
 
   const videoRef = useRef(null);
+  const containerRef = useRef(null);
   const progressBarRef = useRef(null);
   const volumeBarRef = useRef(null);
   const saveIntervalRef = useRef(null);
@@ -640,7 +641,8 @@ const ModernVideoPlayer = () => {
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
-      videoRef.current?.requestFullscreen();
+      // Use the container instead of just the video element
+      containerRef.current?.requestFullscreen();
     } else {
       document.exitFullscreen();
     }
@@ -850,6 +852,34 @@ const ModernVideoPlayer = () => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [navigateToLecture]);
 
+  // Fullscreen change detection
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    document.addEventListener("mozfullscreenchange", handleFullscreenChange);
+    document.addEventListener("MSFullscreenChange", handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener(
+        "webkitfullscreenchange",
+        handleFullscreenChange
+      );
+      document.removeEventListener(
+        "mozfullscreenchange",
+        handleFullscreenChange
+      );
+      document.removeEventListener(
+        "MSFullscreenChange",
+        handleFullscreenChange
+      );
+    };
+  }, []);
+
   // Auto-hide controls
   useEffect(() => {
     let hideTimeout;
@@ -990,7 +1020,7 @@ const ModernVideoPlayer = () => {
   return (
     <div className="modern-video-player-container">
       {/* Video Player */}
-      <div className="modern-video-container">
+      <div className="modern-video-container" ref={containerRef}>
         <video
           ref={videoRef}
           key={lectureId} // Force reload when lectureId changes
@@ -1002,6 +1032,10 @@ const ModernVideoPlayer = () => {
           onEnded={handleEnded}
           onClick={togglePlay}
           crossOrigin="anonymous"
+          controls={false}
+          playsInline
+          disablePictureInPicture
+          controlsList="nodownload nofullscreen noremoteplayback"
         />
 
         {/* Custom Controls */}

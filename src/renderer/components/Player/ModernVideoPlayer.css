@@ -804,6 +804,28 @@
   height: 100vh;
   margin: 0;
   aspect-ratio: unset;
+  background: #000000;
+  border-radius: 0;
+  border: none;
+}
+
+.modern-video-container:fullscreen video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.modern-video-container:fullscreen .video-controls {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.modern-video-container:fullscreen .video-controls.visible {
+  opacity: 1;
+}
+
+.modern-video-container:fullscreen:hover .video-controls {
+  opacity: 1;
 }
 
 /* Subtitle Styling - Modern video player style */
@@ -867,12 +889,6 @@
   font-size: 1.1rem !important;
   background: rgba(0, 0, 0, 0.85) !important;
   color: white !important;
-}
-
-.modern-video-container:fullscreen video {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
 }
 
 /* Focus styles for accessibility */
