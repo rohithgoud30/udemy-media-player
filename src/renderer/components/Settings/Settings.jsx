@@ -202,6 +202,14 @@ const Settings = () => {
             <option value={1.5}>1.5x</option>
             <option value={1.75}>1.75x</option>
             <option value={2.0}>2.0x</option>
+            <option value={2.25}>2.25x</option>
+            <option value={2.5}>2.5x</option>
+            <option value={2.75}>2.75x</option>
+            <option value={3.0}>3.0x</option>
+            <option value={3.25}>3.25x</option>
+            <option value={3.5}>3.5x</option>
+            <option value={3.75}>3.75x</option>
+            <option value={4.0}>4.0x</option>
           </select>
         </div>
 
