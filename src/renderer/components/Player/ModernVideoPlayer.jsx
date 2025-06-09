@@ -888,46 +888,25 @@ const ModernVideoPlayer = () => {
       setShowControls(true);
       clearTimeout(hideTimeout);
       hideTimeout = setTimeout(() => {
-        if (isPlaying) {
+        if (isPlaying && !isFullscreen) {
           setShowControls(false);
         }
-      }, 4000); // Increased from 3000 to 4000ms
+      }, 3000);
     };
 
     const handleMouseMove = () => showControlsTemp();
-    const handleMouseEnter = () => showControlsTemp();
 
-    // Add listeners to the entire container, not just video
-    if (containerRef.current) {
-      containerRef.current.addEventListener("mousemove", handleMouseMove);
-      containerRef.current.addEventListener("mouseenter", handleMouseEnter);
-    }
-
-    // Also listen to video element for extra coverage
     if (videoRef.current) {
       videoRef.current.addEventListener("mousemove", handleMouseMove);
     }
 
-    // Always show controls initially and when not playing
-    if (!isPlaying) {
-      setShowControls(true);
-      clearTimeout(hideTimeout);
-    }
-
     return () => {
       clearTimeout(hideTimeout);
-      if (containerRef.current) {
-        containerRef.current.removeEventListener("mousemove", handleMouseMove);
-        containerRef.current.removeEventListener(
-          "mouseenter",
-          handleMouseEnter
-        );
-      }
       if (videoRef.current) {
         videoRef.current.removeEventListener("mousemove", handleMouseMove);
       }
     };
-  }, [isPlaying]);
+  }, [isPlaying, isFullscreen]);
 
   // Handle volume dragging globally
   useEffect(() => {
