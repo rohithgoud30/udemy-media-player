@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { CourseManager, ProgressManager } from "../../../js/database";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPlay, faArrowRotateRight } from "@fortawesome/free-solid-svg-icons";
 
 const CourseView = () => {
   const { courseId } = useParams();
@@ -158,34 +160,6 @@ const CourseView = () => {
     }
   };
 
-  // Mark all lectures as completed
-  const markAllAsCompleted = async () => {
-    try {
-      if (!course) return;
-
-      // Update all lectures in database
-      for (const section of course.sections) {
-        for (const lecture of section.lectures) {
-          await ProgressManager.markLectureWatched(lecture.id, true);
-        }
-      }
-
-      // Update local state
-      const updatedProgress = {};
-      for (const section of course.sections) {
-        for (const lecture of section.lectures) {
-          updatedProgress[lecture.id] = {
-            ...lectureProgress[lecture.id],
-            watched: 1,
-          };
-        }
-      }
-      setLectureProgress(updatedProgress);
-    } catch (error) {
-      console.error("Error marking all as completed:", error);
-    }
-  };
-
   if (loading) {
     return <div className="loading">Loading course details...</div>;
   }
@@ -316,10 +290,12 @@ const CourseView = () => {
                         <Link
                           to={`/watch/${lecture.id}`}
                           className={`play-button ${
-                            progress.position > 0 ? "resume" : ""
+                            progress.position > 0 && progress.watched !== 1
+                              ? "resume"
+                              : ""
                           }`}
                           title={
-                            progress.position > 0
+                            progress.position > 0 && progress.watched !== 1
                               ? `Resume at ${formatTime(progress.position)}`
                               : "Play lecture"
                           }
@@ -327,14 +303,20 @@ const CourseView = () => {
                         >
                           {progress.position > 0 && progress.watched !== 1 ? (
                             <>
-                              <span className="resume-icon">↻</span>
+                              <FontAwesomeIcon
+                                icon={faArrowRotateRight}
+                                className="resume-icon"
+                              />
                               <span className="resume-text">
                                 {formatTime(progress.position)}
                               </span>
                             </>
                           ) : (
                             <>
-                              <span className="play-icon">▶</span>
+                              <FontAwesomeIcon
+                                icon={faPlay}
+                                className="play-icon"
+                              />
                               <span className="play-text">Play</span>
                             </>
                           )}
@@ -348,10 +330,6 @@ const CourseView = () => {
           </div>
         ))}
       </div>
-
-      <button className="mark-as-completed" onClick={markAllAsCompleted}>
-        Mark as Completed
-      </button>
     </div>
   );
 };

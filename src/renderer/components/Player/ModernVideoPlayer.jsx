@@ -1354,59 +1354,65 @@ const ModernVideoPlayer = () => {
                     )}
                   </div>
 
-                  <button
-                    className={`mark-complete-button ${
-                      lecture.completed ? "completed" : ""
-                    }`}
-                    onClick={async () => {
-                      if (!lecture.completed) {
-                        await ProgressManager.saveProgress(lecture.id, 0, true);
-                        if (videoRef.current) {
-                          videoRef.current.currentTime = 0;
-                        }
-                        setLecture({
-                          ...lecture,
-                          completed: true,
-                          savedProgress: 0,
-                        });
-                      } else {
-                        const currentPos = videoRef.current?.currentTime || 0;
-                        await ProgressManager.saveProgress(
-                          lecture.id,
-                          currentPos,
-                          false
-                        );
-                        setLecture({
-                          ...lecture,
-                          completed: false,
-                          savedProgress: currentPos,
-                        });
-                      }
-                    }}
-                  >
-                    {lecture.completed
-                      ? "Mark as Incomplete"
-                      : "Mark as Completed"}
-                  </button>
-
-                  {lecture.savedProgress > 0 && (
+                  <div className="lecture-action-buttons">
                     <button
-                      className="reset-position-button"
-                      onClick={() => {
-                        if (videoRef.current) {
-                          videoRef.current.currentTime = 0;
-                          ProgressManager.saveProgress(
+                      className={`mark-complete-button ${
+                        lecture.completed ? "completed" : ""
+                      }`}
+                      onClick={async () => {
+                        if (!lecture.completed) {
+                          await ProgressManager.saveProgress(
                             lecture.id,
                             0,
-                            lecture.completed
+                            true
                           );
-                          videoRef.current.play();
+                          if (videoRef.current) {
+                            videoRef.current.currentTime = 0;
+                          }
+                          setLecture({
+                            ...lecture,
+                            completed: true,
+                            savedProgress: 0,
+                          });
+                        } else {
+                          const currentPos = videoRef.current?.currentTime || 0;
+                          await ProgressManager.saveProgress(
+                            lecture.id,
+                            currentPos,
+                            false
+                          );
+                          setLecture({
+                            ...lecture,
+                            completed: false,
+                            savedProgress: currentPos,
+                          });
                         }
                       }}
                     >
-                      Reset to Beginning
+                      {lecture.completed
+                        ? "Mark as Incomplete"
+                        : "Mark as Completed"}
                     </button>
-                  )}
+
+                    {(!lecture.completed || lecture.savedProgress > 0) && (
+                      <button
+                        className="reset-position-button"
+                        onClick={() => {
+                          if (videoRef.current) {
+                            videoRef.current.currentTime = 0;
+                            ProgressManager.saveProgress(
+                              lecture.id,
+                              0,
+                              lecture.completed
+                            );
+                            videoRef.current.play();
+                          }
+                        }}
+                      >
+                        Reset to Beginning
+                      </button>
+                    )}
+                  </div>
                 </>
               )}
             </div>

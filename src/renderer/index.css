@@ -1225,41 +1225,52 @@ a:hover {
 }
 
 .play-button {
-  background-color: var(--primary-color);
+  background: var(--primary-gradient);
   color: white;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-xs) var(--space-sm);
+  text-decoration: none;
+  font-size: var(--font-size-xs);
+  font-weight: 500;
   display: flex;
   align-items: center;
   justify-content: center;
-  text-decoration: none;
-  font-size: 0.75rem;
-  transition: background-color 0.2s;
+  gap: var(--space-xs);
+  transition: all var(--transition-normal);
+  min-width: 60px;
+  height: 28px;
+  box-shadow: var(--shadow-sm);
+  letter-spacing: 0.025em;
 }
 
 .play-button:hover {
-  background-color: var(--primary-hover);
+  background: var(--primary-gradient-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
   text-decoration: none;
 }
 
-/* "Mark as Completed" button for course pages */
-.mark-as-completed {
-  background-color: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 0.8rem 1.25rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  font-size: 0.95rem;
-  margin-top: 1rem;
-  align-self: flex-end;
+.play-button.resume {
+  background: linear-gradient(135deg, var(--warning-color), #d17c00);
+  box-shadow: 0 0 8px rgba(255, 167, 38, 0.3);
 }
 
-.mark-as-completed:hover {
-  background-color: var(--primary-hover);
+.play-button.resume:hover {
+  background: linear-gradient(135deg, #d17c00, var(--warning-color));
+  box-shadow: 0 0 12px rgba(255, 167, 38, 0.4);
+}
+
+.play-button .play-icon,
+.play-button .resume-icon {
+  font-size: 10px;
+  margin-right: 2px;
+}
+
+.play-button .play-text,
+.play-button .resume-text {
+  font-size: 11px;
+  font-weight: 600;
 }
 
 /* Navigation buttons */
