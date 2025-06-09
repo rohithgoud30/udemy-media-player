@@ -170,17 +170,27 @@ const ModernVideoPlayer = () => {
     autoPlayNext: true, // Always true
   });
 
+  // Subtitle settings from global settings
+  const [subtitleSettings, setSubtitleSettings] = useState({
+    enabled: true,
+    fontSize: "medium",
+    fontColor: "white",
+    backgroundColor: "black",
+  });
+
   // Available playback speeds
   const playbackRates = [
     0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75, 4,
   ];
 
-  // Load player settings
+  // Load player settings and subtitle settings
   useEffect(() => {
     try {
       const savedSettings = localStorage.getItem("udemyPlayerSettings");
       if (savedSettings) {
         const parsedSettings = JSON.parse(savedSettings);
+
+        // Load playback settings
         if (parsedSettings.playback) {
           setPlayerSettings({
             defaultSpeed: parsedSettings.playback.defaultSpeed || 1.0,
@@ -193,11 +203,71 @@ const ModernVideoPlayer = () => {
             autoPlayNext: true, // Always true
           });
         }
+
+        // Load subtitle settings
+        if (parsedSettings.subtitles) {
+          setSubtitleSettings({
+            enabled:
+              parsedSettings.subtitles.enabled !== undefined
+                ? parsedSettings.subtitles.enabled
+                : true,
+            fontSize: parsedSettings.subtitles.fontSize || "medium",
+            fontColor: parsedSettings.subtitles.fontColor || "white",
+            backgroundColor:
+              parsedSettings.subtitles.backgroundColor || "black",
+          });
+        }
       }
     } catch (error) {
       console.error("Error loading player settings:", error);
     }
   }, []);
+
+  // Apply subtitle styling to video element
+  useEffect(() => {
+    if (videoRef.current) {
+      const video = videoRef.current;
+
+      // Apply custom CSS variables for subtitle styling
+      const fontSize =
+        {
+          small: "0.9rem",
+          medium: "1.1rem",
+          large: "1.4rem",
+          "x-large": "1.7rem",
+        }[subtitleSettings.fontSize] || "1.1rem";
+
+      const fontColor =
+        {
+          white: "#ffffff",
+          yellow: "#ffff00",
+          green: "#00ff00",
+          red: "#ff0000",
+          blue: "#0066ff",
+          cyan: "#00ffff",
+        }[subtitleSettings.fontColor] || "#ffffff";
+
+      const backgroundColor =
+        {
+          black: "rgba(0, 0, 0, 0.85)",
+          transparent: "transparent",
+          "semi-transparent": "rgba(0, 0, 0, 0.5)",
+          "dark-blue": "rgba(0, 30, 60, 0.85)",
+          "dark-green": "rgba(0, 40, 20, 0.85)",
+        }[subtitleSettings.backgroundColor] || "rgba(0, 0, 0, 0.85)";
+
+      // Set CSS custom properties on the video container
+      const container = containerRef.current;
+      if (container) {
+        container.style.setProperty("--subtitle-font-size", fontSize);
+        container.style.setProperty("--subtitle-font-color", fontColor);
+        container.style.setProperty(
+          "--subtitle-background-color",
+          backgroundColor
+        );
+      }
+    }
+  }, [subtitleSettings]);
 
   // Navigate to lecture function
   const navigateToLecture = useCallback(
@@ -723,12 +793,18 @@ const ModernVideoPlayer = () => {
         console.log("🎯 Subtitle track loaded successfully!");
         console.log("📊 Total text tracks:", video.textTracks.length);
 
-        // Enable subtitles
+        // Enable subtitles based on settings
         if (video.textTracks.length > 0) {
           const textTrack = video.textTracks[0];
-          textTrack.mode = "showing";
-          setSubtitlesEnabled(true);
-          console.log("👁️ Subtitles enabled and visible");
+          if (subtitleSettings.enabled) {
+            textTrack.mode = "showing";
+            setSubtitlesEnabled(true);
+            console.log("👁️ Subtitles enabled and visible (from settings)");
+          } else {
+            textTrack.mode = "hidden";
+            setSubtitlesEnabled(false);
+            console.log("👁️‍🗨️ Subtitles disabled (from settings)");
+          }
         }
       });
 
@@ -756,10 +832,36 @@ const ModernVideoPlayer = () => {
           if (track.mode === "showing") {
             track.mode = "hidden";
             setSubtitlesEnabled(false);
+
+            // Update settings
+            const settings = JSON.parse(
+              localStorage.getItem("udemyPlayerSettings") || "{}"
+            );
+            settings.subtitles = settings.subtitles || {};
+            settings.subtitles.enabled = false;
+            localStorage.setItem(
+              "udemyPlayerSettings",
+              JSON.stringify(settings)
+            );
+            setSubtitleSettings((prev) => ({ ...prev, enabled: false }));
+
             console.log("👁️‍🗨️ Subtitles hidden");
           } else {
             track.mode = "showing";
             setSubtitlesEnabled(true);
+
+            // Update settings
+            const settings = JSON.parse(
+              localStorage.getItem("udemyPlayerSettings") || "{}"
+            );
+            settings.subtitles = settings.subtitles || {};
+            settings.subtitles.enabled = true;
+            localStorage.setItem(
+              "udemyPlayerSettings",
+              JSON.stringify(settings)
+            );
+            setSubtitleSettings((prev) => ({ ...prev, enabled: true }));
+
             console.log("👁️ Subtitles shown");
           }
           break;

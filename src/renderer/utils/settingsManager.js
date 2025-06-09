@@ -16,17 +16,6 @@ const DEFAULT_SETTINGS = {
     fontColor: "white",
     backgroundColor: "black",
   },
-  interface: {
-    theme: "dark",
-    sidebarExpanded: true,
-    showCourseThumbnails: true,
-    courseSortOrder: "newest",
-  },
-  storage: {
-    downloadLocation: "",
-    maxConcurrentDownloads: 2,
-    deleteCompletedCourses: false,
-  },
   shortcuts: {
     playPause: "Space",
     seekForward: "ArrowRight",
@@ -76,14 +65,6 @@ class SettingsManager {
           subtitles: {
             ...DEFAULT_SETTINGS.subtitles,
             ...(parsed.subtitles || {}),
-          },
-          interface: {
-            ...DEFAULT_SETTINGS.interface,
-            ...(parsed.interface || {}),
-          },
-          storage: {
-            ...DEFAULT_SETTINGS.storage,
-            ...(parsed.storage || {}),
           },
           shortcuts: {
             ...DEFAULT_SETTINGS.shortcuts,

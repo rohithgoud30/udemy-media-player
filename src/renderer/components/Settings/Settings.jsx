@@ -23,21 +23,6 @@ const DEFAULT_SETTINGS = {
     backgroundColor: "black",
   },
 
-  // Interface settings
-  interface: {
-    theme: "dark", // 'dark' or 'light'
-    sidebarExpanded: true,
-    showCourseThumbnails: true,
-    courseSortOrder: "newest",
-  },
-
-  // Storage settings
-  storage: {
-    downloadLocation: "",
-    maxConcurrentDownloads: 2,
-    deleteCompletedCourses: false,
-  },
-
   // Keyboard shortcuts
   shortcuts: {
     playPause: "Space",
@@ -79,49 +64,35 @@ const Settings = () => {
               ...DEFAULT_SETTINGS.subtitles,
               ...(parsed.subtitles || {}),
             },
-            interface: {
-              ...DEFAULT_SETTINGS.interface,
-              ...(parsed.interface || {}),
-            },
-            storage: {
-              ...DEFAULT_SETTINGS.storage,
-              ...(parsed.storage || {}),
-            },
             shortcuts: {
               ...DEFAULT_SETTINGS.shortcuts,
               ...(parsed.shortcuts || {}),
             },
           });
-        } else if (window.electronAPI) {
+
           // If using Electron, we can also try to load from a settings file
           // This is just a placeholder - implement based on your IPC methods
-          const electronSettings = await window.electronAPI.getSettings();
-          if (electronSettings) {
-            setSettings({
-              ...DEFAULT_SETTINGS,
-              ...electronSettings,
-              // Ensure nested objects are properly merged (same as above)
-              playback: {
-                ...DEFAULT_SETTINGS.playback,
-                ...(electronSettings.playback || {}),
-              },
-              subtitles: {
-                ...DEFAULT_SETTINGS.subtitles,
-                ...(electronSettings.subtitles || {}),
-              },
-              interface: {
-                ...DEFAULT_SETTINGS.interface,
-                ...(electronSettings.interface || {}),
-              },
-              storage: {
-                ...DEFAULT_SETTINGS.storage,
-                ...(electronSettings.storage || {}),
-              },
-              shortcuts: {
-                ...DEFAULT_SETTINGS.shortcuts,
-                ...(electronSettings.shortcuts || {}),
-              },
-            });
+          if (window.electronAPI?.getSettings) {
+            const electronSettings = await window.electronAPI.getSettings();
+            if (electronSettings) {
+              setSettings({
+                ...DEFAULT_SETTINGS,
+                ...electronSettings,
+                // Ensure nested objects are properly merged (same as above)
+                playback: {
+                  ...DEFAULT_SETTINGS.playback,
+                  ...(electronSettings.playback || {}),
+                },
+                subtitles: {
+                  ...DEFAULT_SETTINGS.subtitles,
+                  ...(electronSettings.subtitles || {}),
+                },
+                shortcuts: {
+                  ...DEFAULT_SETTINGS.shortcuts,
+                  ...(electronSettings.shortcuts || {}),
+                },
+              });
+            }
           }
         }
       } catch (error) {
@@ -187,26 +158,6 @@ const Settings = () => {
     ) {
       localStorage.removeItem("udemyPlayerSettings");
       setSettings(DEFAULT_SETTINGS);
-    }
-  };
-
-  // Choose download location (Electron only)
-  const chooseDownloadLocation = async () => {
-    if (!window.electronAPI) {
-      alert("This feature is only available in the desktop app.");
-      return;
-    }
-
-    try {
-      console.log("Calling selectDirectory from Settings...");
-      const dirPath = await window.electronAPI.selectDirectory();
-      console.log("Selected directory:", dirPath);
-      if (dirPath) {
-        handleInputChange("storage", "downloadLocation", dirPath);
-      }
-    } catch (error) {
-      console.error("Error selecting directory:", error);
-      alert("Error selecting directory: " + error.message);
     }
   };
 
@@ -286,6 +237,7 @@ const Settings = () => {
             <option value="small">Small</option>
             <option value="medium">Medium</option>
             <option value="large">Large</option>
+            <option value="x-large">Extra Large</option>
           </select>
         </div>
 
@@ -301,6 +253,9 @@ const Settings = () => {
             <option value="white">White</option>
             <option value="yellow">Yellow</option>
             <option value="green">Green</option>
+            <option value="red">Red</option>
+            <option value="blue">Blue</option>
+            <option value="cyan">Cyan</option>
           </select>
         </div>
 
@@ -315,118 +270,9 @@ const Settings = () => {
           >
             <option value="black">Black</option>
             <option value="transparent">Transparent</option>
-            <option value="blue">Blue</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="settings-section">
-        <h2>Interface Settings</h2>
-
-        <div className="setting-item">
-          <label htmlFor="theme">Theme:</label>
-          <select
-            id="theme"
-            value={settings.interface?.theme || "dark"}
-            onChange={(e) =>
-              handleInputChange("interface", "theme", e.target.value)
-            }
-          >
-            <option value="dark">Dark</option>
-            <option value="light">Light</option>
-          </select>
-        </div>
-
-        <div className="setting-item">
-          <label>
-            <input
-              type="checkbox"
-              checked={settings.interface?.sidebarExpanded || true}
-              onChange={(e) =>
-                handleInputChange(
-                  "interface",
-                  "sidebarExpanded",
-                  e.target.checked
-                )
-              }
-            />
-            Expand sidebar by default
-          </label>
-        </div>
-
-        <div className="setting-item">
-          <label>
-            <input
-              type="checkbox"
-              checked={settings.interface?.showCourseThumbnails || true}
-              onChange={(e) =>
-                handleInputChange(
-                  "interface",
-                  "showCourseThumbnails",
-                  e.target.checked
-                )
-              }
-            />
-            Show course thumbnails
-          </label>
-        </div>
-
-        <div className="setting-item">
-          <label htmlFor="courseSortOrder">Course Sort Order:</label>
-          <select
-            id="courseSortOrder"
-            value={settings.interface?.courseSortOrder || "newest"}
-            onChange={(e) =>
-              handleInputChange("interface", "courseSortOrder", e.target.value)
-            }
-          >
-            <option value="newest">Newest First</option>
-            <option value="oldest">Oldest First</option>
-            <option value="alphabetical">Alphabetical</option>
-            <option value="lastWatched">Last Watched</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="settings-section">
-        <h2>Storage Settings</h2>
-
-        <div className="setting-item download-location">
-          <label htmlFor="downloadLocation">Download Location:</label>
-          <div className="download-path-input">
-            <input
-              type="text"
-              id="downloadLocation"
-              value={settings.storage?.downloadLocation || ""}
-              onChange={(e) =>
-                handleInputChange("storage", "downloadLocation", e.target.value)
-              }
-              readOnly
-            />
-            <button onClick={chooseDownloadLocation}>Browse...</button>
-          </div>
-        </div>
-
-        <div className="setting-item">
-          <label htmlFor="maxConcurrentDownloads">
-            Max Concurrent Downloads:
-          </label>
-          <select
-            id="maxConcurrentDownloads"
-            value={settings.storage?.maxConcurrentDownloads || 2}
-            onChange={(e) =>
-              handleInputChange(
-                "storage",
-                "maxConcurrentDownloads",
-                parseInt(e.target.value)
-              )
-            }
-          >
-            <option value={1}>1</option>
-            <option value={2}>2</option>
-            <option value={3}>3</option>
-            <option value={5}>5</option>
-            <option value={10}>10</option>
+            <option value="semi-transparent">Semi-transparent</option>
+            <option value="dark-blue">Dark Blue</option>
+            <option value="dark-green">Dark Green</option>
           </select>
         </div>
       </div>
