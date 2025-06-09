@@ -124,6 +124,15 @@ const ModernVideoPlayer = () => {
   const location = useLocation();
   const routeState = location.state || {};
 
+  // Only log when lectureId actually changes, not on every render
+  const prevLectureId = useRef(lectureId);
+  if (prevLectureId.current !== lectureId) {
+    console.log(
+      `📍 ModernVideoPlayer lectureId changed: ${prevLectureId.current} → ${lectureId}`
+    );
+    prevLectureId.current = lectureId;
+  }
+
   const videoRef = useRef(null);
   const progressBarRef = useRef(null);
   const volumeBarRef = useRef(null);
@@ -271,12 +280,22 @@ const ModernVideoPlayer = () => {
 
   // Load lecture data
   useEffect(() => {
+    console.log(`🔄 useEffect triggered for lectureId: ${lectureId}`);
     async function loadLectureData() {
       try {
         setLoading(true);
         setError("");
 
+        console.log(`🎬 Loading lecture data for ID: ${lectureId}`);
+
+        // Reset video state when switching lectures
+        setCurrentTime(0);
+        setDuration(0);
+        setIsPlaying(false);
+        setSubtitlesEnabled(false);
+
         const lectureData = await findLecture(parseInt(lectureId));
+        console.log(`📚 Found lecture data:`, lectureData);
 
         // Override filePath and videoUrl if provided via route state
         if (routeState.filePath) {
@@ -318,13 +337,16 @@ const ModernVideoPlayer = () => {
           savedPos = progress.position;
         }
 
+        const videoUrl =
+          routeState.videoUrl || createVideoUrl(lectureData.filePath);
         const lectureWithProgress = {
           ...lectureData,
-          videoUrl: routeState.videoUrl || createVideoUrl(lectureData.filePath),
+          videoUrl: videoUrl,
           savedProgress: savedPos,
           completed: progress.watched === 1,
         };
 
+        console.log(`🎥 Setting video URL: ${videoUrl}`);
         setLecture(lectureWithProgress);
 
         // Load course data
@@ -393,9 +415,32 @@ const ModernVideoPlayer = () => {
     loadLectureData();
   }, [lectureId]);
 
+  // Handle video source changes
+  useEffect(() => {
+    console.log(`🔄 Video URL changed: ${lecture?.videoUrl}`);
+    console.log(`📺 Video ref exists: ${!!videoRef.current}`);
+
+    if (lecture?.videoUrl) {
+      // Small delay to ensure video element is mounted
+      setTimeout(() => {
+        if (videoRef.current) {
+          console.log("🎬 Loading new video source:", lecture.videoUrl);
+          videoRef.current.src = lecture.videoUrl; // Explicitly set src
+          videoRef.current.load(); // Force reload
+          videoRef.current.currentTime = 0; // Reset position
+        } else {
+          console.log("❌ Video ref still null after timeout");
+        }
+      }, 100);
+    }
+  }, [lecture?.videoUrl]);
+
   // Video event handlers
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
+      console.log(`✅ Video loaded: ${videoRef.current.src}`);
+      console.log(`⏱️ Duration: ${videoRef.current.duration}s`);
+
       setDuration(videoRef.current.duration);
       setPlaybackRate(playerSettings.defaultSpeed);
       videoRef.current.playbackRate = playerSettings.defaultSpeed;
@@ -883,7 +928,12 @@ const ModernVideoPlayer = () => {
         className={`mini-lecture-item ${isActive ? "active" : ""} ${
           isCompleted ? "completed" : ""
         }`}
-        onClick={() => navigate(`/watch/${miniLecture.id}`)}
+        onClick={() => {
+          console.log(
+            `🎯 Clicking on lecture ${miniLecture.id}, current lectureId: ${lectureId}`
+          );
+          navigate(`/watch/${miniLecture.id}`);
+        }}
       >
         <div className="mini-lecture-status">
           {isActive ? "▶" : isCompleted ? "✓" : "○"}
@@ -937,6 +987,7 @@ const ModernVideoPlayer = () => {
       <div className="modern-video-container">
         <video
           ref={videoRef}
+          key={lectureId} // Force reload when lectureId changes
           src={lecture?.videoUrl}
           onLoadedMetadata={handleLoadedMetadata}
           onTimeUpdate={handleTimeUpdate}
