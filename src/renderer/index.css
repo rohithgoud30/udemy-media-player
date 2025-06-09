@@ -258,6 +258,16 @@ a:hover {
   position: relative;
 }
 
+/* Remove top padding for video player pages to eliminate extra space */
+.content-area:has(.modern-video-player-container) {
+  padding-top: 0;
+}
+
+/* Fallback for browsers that don't support :has() selector */
+.video-player-page .content-area {
+  padding-top: 0;
+}
+
 /* Modern Card Component */
 .card {
   background: var(--background-card);
