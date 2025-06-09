@@ -205,6 +205,16 @@
   border-radius: 2px;
   cursor: pointer;
   position: relative;
+  transition: height 0.2s ease;
+  user-select: none;
+}
+
+.volume-bar:hover {
+  height: 6px;
+}
+
+.volume-bar.dragging {
+  height: 6px;
 }
 
 .volume-filled {
@@ -212,6 +222,24 @@
   background: var(--primary-gradient);
   border-radius: 2px;
   transition: width var(--transition-fast);
+  pointer-events: none;
+}
+
+.volume-thumb {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  background: white;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.volume-bar:hover .volume-thumb {
+  opacity: 1 !important;
 }
 
 /* Time Display */

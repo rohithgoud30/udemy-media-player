@@ -140,11 +140,13 @@ const ModernVideoPlayer = () => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
+  const [previousVolume, setPreviousVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [subtitlesEnabled, setSubtitlesEnabled] = useState(false);
+  const [isDraggingVolume, setIsDraggingVolume] = useState(false);
 
   // Settings
   const [playerSettings, setPlayerSettings] = useState({
@@ -467,29 +469,66 @@ const ModernVideoPlayer = () => {
     }
   };
 
-  const handleVolumeChange = (e) => {
+  // Volume control helper function
+  const updateVolume = (e) => {
     if (videoRef.current && volumeBarRef.current) {
       const rect = volumeBarRef.current.getBoundingClientRect();
       const pos = (e.clientX - rect.left) / rect.width;
       const newVolume = Math.max(0, Math.min(1, pos));
       setVolume(newVolume);
-      setIsMuted(newVolume === 0);
+
+      if (newVolume > 0) {
+        setIsMuted(false);
+        setPreviousVolume(newVolume);
+        videoRef.current.muted = false;
+      } else {
+        setIsMuted(true);
+        videoRef.current.muted = true;
+      }
+
       videoRef.current.volume = newVolume;
-      videoRef.current.muted = newVolume === 0;
     }
+  };
+
+  // Volume bar click handler
+  const handleVolumeClick = (e) => {
+    updateVolume(e);
+  };
+
+  // Volume bar mouse down (start dragging)
+  const handleVolumeMouseDown = (e) => {
+    setIsDraggingVolume(true);
+    updateVolume(e);
+    e.preventDefault();
+  };
+
+  // Volume bar mouse move (dragging)
+  const handleVolumeMouseMove = (e) => {
+    if (isDraggingVolume) {
+      updateVolume(e);
+    }
+  };
+
+  // Volume bar mouse up (stop dragging)
+  const handleVolumeMouseUp = () => {
+    setIsDraggingVolume(false);
   };
 
   const toggleMute = () => {
     if (videoRef.current) {
-      const newMuted = !isMuted;
-      setIsMuted(newMuted);
-      videoRef.current.muted = newMuted;
-      if (newMuted) {
-        videoRef.current.volume = 0;
-        setVolume(0);
+      if (isMuted) {
+        // Unmute: restore to previous volume
+        const restoreVolume = previousVolume > 0 ? previousVolume : 0.5;
+        setIsMuted(false);
+        setVolume(restoreVolume);
+        videoRef.current.muted = false;
+        videoRef.current.volume = restoreVolume;
       } else {
-        videoRef.current.volume = volume || 0.5;
-        setVolume(volume || 0.5);
+        // Mute: remember current volume and mute
+        setPreviousVolume(volume);
+        setIsMuted(true);
+        videoRef.current.muted = true;
+        videoRef.current.volume = 0;
       }
     }
   };
@@ -754,6 +793,31 @@ const ModernVideoPlayer = () => {
     };
   }, [isPlaying, isFullscreen]);
 
+  // Handle volume dragging globally
+  useEffect(() => {
+    const handleGlobalMouseMove = (e) => {
+      if (isDraggingVolume) {
+        handleVolumeMouseMove(e);
+      }
+    };
+
+    const handleGlobalMouseUp = () => {
+      if (isDraggingVolume) {
+        handleVolumeMouseUp();
+      }
+    };
+
+    if (isDraggingVolume) {
+      document.addEventListener("mousemove", handleGlobalMouseMove);
+      document.addEventListener("mouseup", handleGlobalMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener("mousemove", handleGlobalMouseMove);
+      document.removeEventListener("mouseup", handleGlobalMouseUp);
+    };
+  }, [isDraggingVolume]);
+
   // Render mini lecture item
   const renderMiniLectureItem = (miniLecture) => {
     const isActive = miniLecture.id === parseInt(lectureId);
@@ -868,14 +932,18 @@ const ModernVideoPlayer = () => {
                 <FontAwesomeIcon icon={faArrowRotateRight} />
               </button>
 
-              <button onClick={toggleMute} className="control-btn">
+              <button
+                onClick={toggleMute}
+                className="control-btn"
+                title={isMuted ? "Unmute (M)" : "Mute (M)"}
+              >
                 <FontAwesomeIcon
                   icon={
-                    isMuted
+                    isMuted || volume === 0
                       ? faVolumeXmark
-                      : volume === 0
+                      : volume < 0.3
                       ? faVolumeOff
-                      : volume < 0.5
+                      : volume < 0.7
                       ? faVolumeLow
                       : faVolumeHigh
                   }
@@ -885,12 +953,21 @@ const ModernVideoPlayer = () => {
               <div className="volume-container">
                 <div
                   ref={volumeBarRef}
-                  className="volume-bar"
-                  onClick={handleVolumeChange}
+                  className={`volume-bar ${isDraggingVolume ? "dragging" : ""}`}
+                  onClick={handleVolumeClick}
+                  onMouseDown={handleVolumeMouseDown}
+                  style={{ cursor: isDraggingVolume ? "grabbing" : "pointer" }}
                 >
                   <div
                     className="volume-filled"
                     style={{ width: `${volume * 100}%` }}
+                  />
+                  <div
+                    className="volume-thumb"
+                    style={{
+                      left: `${volume * 100}%`,
+                      opacity: isDraggingVolume ? 1 : 0,
+                    }}
                   />
                 </div>
               </div>
