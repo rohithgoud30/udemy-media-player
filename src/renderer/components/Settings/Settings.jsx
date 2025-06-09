@@ -437,44 +437,32 @@ const Settings = () => {
         <div className="keyboard-shortcuts-table">
           <div className="shortcut-row">
             <div className="shortcut-label">Play/Pause:</div>
-            <div className="shortcut-key">
-              {settings.shortcuts?.playPause || "Space"}
-            </div>
+            <div className="shortcut-key">Space/K</div>
           </div>
 
           <div className="shortcut-row">
-            <div className="shortcut-label">Seek Forward:</div>
-            <div className="shortcut-key">
-              {settings.shortcuts?.seekForward || "ArrowRight"}
-            </div>
+            <div className="shortcut-label">Seek 5s:</div>
+            <div className="shortcut-key">←/→</div>
           </div>
 
           <div className="shortcut-row">
-            <div className="shortcut-label">Seek Backward:</div>
-            <div className="shortcut-key">
-              {settings.shortcuts?.seekBackward || "ArrowLeft"}
-            </div>
+            <div className="shortcut-label">Fullscreen:</div>
+            <div className="shortcut-key">F</div>
           </div>
 
           <div className="shortcut-row">
-            <div className="shortcut-label">Volume Up:</div>
-            <div className="shortcut-key">
-              {settings.shortcuts?.volumeUp || "ArrowUp"}
-            </div>
+            <div className="shortcut-label">Previous/Next:</div>
+            <div className="shortcut-key">,/.</div>
           </div>
 
           <div className="shortcut-row">
-            <div className="shortcut-label">Volume Down:</div>
-            <div className="shortcut-key">
-              {settings.shortcuts?.volumeDown || "ArrowDown"}
-            </div>
+            <div className="shortcut-label">Mute/Unmute:</div>
+            <div className="shortcut-key">M</div>
           </div>
 
           <div className="shortcut-row">
-            <div className="shortcut-label">Toggle Fullscreen:</div>
-            <div className="shortcut-key">
-              {settings.shortcuts?.toggleFullscreen || "f"}
-            </div>
+            <div className="shortcut-label">Toggle Subtitles:</div>
+            <div className="shortcut-key">C</div>
           </div>
         </div>
 

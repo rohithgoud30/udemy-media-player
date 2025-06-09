@@ -13,8 +13,10 @@ import {
   faVolumeXmark,
   faExpand,
   faCompress,
-  faArrowRotateRight,
-  faArrowRotateLeft,
+  faStepBackward,
+  faStepForward,
+  faBackward,
+  faForward,
 } from "@fortawesome/free-solid-svg-icons";
 import { faClosedCaptioning } from "@fortawesome/free-regular-svg-icons";
 
@@ -1036,18 +1038,34 @@ const ModernVideoPlayer = () => {
 
               <button
                 onClick={() => navigateToLecture("prev")}
-                className="control-btn"
-                title="Previous (Left Arrow)"
+                className="control-btn navigation-btn"
+                title="Previous Lecture"
               >
-                <FontAwesomeIcon icon={faArrowRotateLeft} />
+                <FontAwesomeIcon icon={faStepBackward} />
+              </button>
+
+              <button
+                onClick={() => seek(-5)}
+                className="control-btn seek-btn"
+                title="Seek Back 5s (Left Arrow)"
+              >
+                <FontAwesomeIcon icon={faBackward} />
+              </button>
+
+              <button
+                onClick={() => seek(5)}
+                className="control-btn seek-btn"
+                title="Seek Forward 5s (Right Arrow)"
+              >
+                <FontAwesomeIcon icon={faForward} />
               </button>
 
               <button
                 onClick={() => navigateToLecture("next")}
-                className="control-btn"
-                title="Next (Right Arrow)"
+                className="control-btn navigation-btn"
+                title="Next Lecture"
               >
-                <FontAwesomeIcon icon={faArrowRotateRight} />
+                <FontAwesomeIcon icon={faStepForward} />
               </button>
 
               <button
