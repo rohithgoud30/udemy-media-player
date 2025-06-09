@@ -441,6 +441,14 @@ const ModernVideoPlayer = () => {
         videoRef.current.currentTime = lecture.savedProgress;
       }
 
+      // Auto-play if setting is enabled
+      if (playerSettings.autoPlay) {
+        console.log(`🎬 Auto-playing video based on setting`);
+        videoRef.current.play().catch((error) => {
+          console.warn("Auto-play was prevented by browser:", error);
+        });
+      }
+
       // Setup subtitles after video metadata is loaded
       setupSubtitlesForVideo();
     }
