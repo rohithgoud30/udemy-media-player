@@ -91,6 +91,58 @@ const createVideoUrl = (filePath) => {
   }
 };
 
+// Helper function to convert SRT content to WebVTT format
+const convertSrtToWebVtt = (srtContent) => {
+  try {
+    console.log(
+      "Converting SRT to WebVTT, original content length:",
+      srtContent.length
+    );
+
+    // Start with WebVTT header
+    let webvtt = "WEBVTT\n\n";
+
+    // Split the content into subtitle blocks
+    const blocks = srtContent.trim().split(/\n\s*\n/);
+
+    for (const block of blocks) {
+      const lines = block.trim().split("\n");
+      if (lines.length < 3) continue; // Invalid block
+
+      // Skip the sequence number (first line)
+      const timeLine = lines[1];
+      const textLines = lines.slice(2);
+
+      // Convert time format from SRT (00:00:01,000) to WebVTT (00:00:01.000)
+      const convertedTimeLine = timeLine.replace(/,/g, ".");
+
+      // Add the cue to WebVTT
+      webvtt += `${convertedTimeLine}\n`;
+      webvtt += `${textLines.join("\n")}\n\n`;
+    }
+
+    console.log("WebVTT conversion completed, result length:", webvtt.length);
+    console.log("WebVTT preview:", webvtt.substring(0, 200));
+    return webvtt;
+  } catch (error) {
+    console.error("Error converting SRT to WebVTT:", error);
+    return null;
+  }
+};
+
+// Helper function to create a Blob URL for WebVTT content
+const createWebVttBlobUrl = (webvttContent) => {
+  try {
+    const blob = new Blob([webvttContent], { type: "text/vtt" });
+    const blobUrl = URL.createObjectURL(blob);
+    console.log("Created WebVTT blob URL:", blobUrl);
+    return blobUrl;
+  } catch (error) {
+    console.error("Error creating WebVTT blob URL:", error);
+    return null;
+  }
+};
+
 // Add a helper function to format duration
 const formatDuration = (seconds) => {
   if (!seconds) return "";
@@ -539,7 +591,7 @@ const VideoPlayer = () => {
   }, [lectureId]);
 
   // Initialize Video.js player
-  const initializePlayer = (lectureData, startPosition = 0) => {
+  const initializePlayer = async (lectureData, startPosition = 0) => {
     if (!videoRef.current) {
       console.error("Video container ref is not available");
       return null;
@@ -643,6 +695,70 @@ const VideoPlayer = () => {
       playerSettings,
     });
 
+    // Find and add subtitle track if .srt file exists
+    const tracks = [];
+    if (lectureData.filePath && isElectron()) {
+      const srtFilePath = await window.electronAPI.getSrtFilePath(
+        lectureData.filePath
+      );
+      console.log("Checking for subtitle file:", srtFilePath);
+
+      // This needs to be awaited now as initializePlayer is async
+      try {
+        const srtFileExists = await checkFileExists(srtFilePath);
+        if (srtFileExists) {
+          console.log("SRT file found! Reading content...");
+
+          // Read the SRT file content
+          const srtContent = await window.electronAPI.readSrtFile(srtFilePath);
+
+          if (srtContent) {
+            console.log("SRT content loaded, length:", srtContent.length);
+            console.log("SRT content preview:", srtContent.substring(0, 200));
+
+            // Convert SRT to WebVTT format
+            const webvttContent = convertSrtToWebVtt(srtContent);
+
+            if (webvttContent) {
+              // Create a blob URL for the WebVTT content
+              const webvttBlobUrl = createWebVttBlobUrl(webvttContent);
+
+              if (webvttBlobUrl) {
+                tracks.push({
+                  kind: "subtitles",
+                  label: "English",
+                  srclang: "en",
+                  src: webvttBlobUrl,
+                  default: true,
+                });
+                console.log("Added WebVTT subtitle track:", webvttBlobUrl);
+              } else {
+                console.error("Failed to create WebVTT blob URL");
+              }
+            } else {
+              console.error("Failed to convert SRT to WebVTT");
+              // Fallback to original method
+              const srtFileUrl = createVideoUrl(srtFilePath);
+              tracks.push({
+                kind: "subtitles",
+                label: "English",
+                srclang: "en",
+                src: srtFileUrl,
+                default: true,
+              });
+              console.log("Added SRT subtitle track (fallback):", srtFileUrl);
+            }
+          } else {
+            console.error("Failed to read SRT file content");
+          }
+        } else {
+          console.log("No SRT file found for this video.");
+        }
+      } catch (error) {
+        console.error("Error checking for SRT file:", error);
+      }
+    }
+
     // Configure video.js player with optimal settings for local files
     const effectiveSettings = {
       ...playerSettings,
@@ -688,9 +804,193 @@ const VideoPlayer = () => {
               type: videoType,
             },
           ],
+          tracks: tracks, // Add tracks to the player options
         },
         function () {
           console.log("Player initialization complete!");
+          console.log("Player tracks on init:", this.textTracks());
+
+          // Explicitly enable subtitles if they exist
+          const textTracks = this.textTracks();
+          console.log(
+            "Text tracks found during initialization:",
+            textTracks.length
+          );
+
+          if (textTracks && textTracks.length > 0) {
+            // Make sure subtitles are visible and enabled
+            for (let i = 0; i < textTracks.length; i++) {
+              const track = textTracks[i];
+              console.log(`Track ${i}:`, {
+                kind: track.kind,
+                label: track.label,
+                language: track.language,
+                mode: track.mode,
+                src: track.src,
+              });
+
+              if (track.kind === "subtitles" || track.kind === "captions") {
+                // Show this subtitle track
+                track.mode = "showing";
+                console.log(`Enabled subtitle track: ${track.label}`);
+
+                // Add enhanced CSS to improve subtitle visibility
+                const style = document.createElement("style");
+                style.id = "subtitle-enhancement-styles";
+                style.textContent = `
+                  .video-js .vjs-text-track-display {
+                    font-size: 28px !important;
+                    font-weight: bold !important;
+                    z-index: 999999 !important;
+                    pointer-events: none !important;
+                  }
+                  .video-js .vjs-text-track-cue {
+                    background-color: rgba(0, 0, 0, 0.8) !important;
+                    color: white !important;
+                    text-shadow: 2px 2px 4px black !important;
+                    border-radius: 4px !important;
+                    padding: 4px 8px !important;
+                    font-family: Arial, sans-serif !important;
+                    line-height: 1.2 !important;
+                  }
+                  .video-js .vjs-text-track-cue div {
+                    color: white !important;
+                    background: none !important;
+                  }
+                  /* Force subtitle display */
+                  .video-js .vjs-text-track-display div {
+                    position: absolute !important;
+                    bottom: 60px !important;
+                    left: 50% !important;
+                    transform: translateX(-50%) !important;
+                    white-space: pre-wrap !important;
+                    text-align: center !important;
+                  }
+                `;
+
+                // Remove any existing style with same ID
+                const existingStyle = document.getElementById(
+                  "subtitle-enhancement-styles"
+                );
+                if (existingStyle) {
+                  existingStyle.remove();
+                }
+
+                document.head.appendChild(style);
+                console.log("Enhanced subtitle CSS applied");
+                break;
+              }
+            }
+          } else if (tracks.length > 0) {
+            // No tracks found in player, but we know we have subtitle files
+            console.log(
+              "No tracks in player but subtitles were found. Manually adding them."
+            );
+
+            // Try manually adding the subtitles
+            for (const trackData of tracks) {
+              try {
+                console.log("Manually adding track data:", trackData);
+
+                // Add the track to the player
+                const track = this.addRemoteTextTrack(
+                  {
+                    kind: trackData.kind,
+                    label: trackData.label,
+                    srclang: trackData.srclang,
+                    src: trackData.src,
+                    default: true,
+                  },
+                  false
+                );
+
+                console.log("Manually added track:", track);
+
+                // Force the track to be shown
+                if (track && track.track) {
+                  track.track.mode = "showing";
+                  console.log("Set track mode to showing:", track.track.mode);
+                }
+
+                // Add enhanced CSS to improve subtitle visibility
+                const style = document.createElement("style");
+                style.id = "subtitle-enhancement-styles-manual";
+                style.textContent = `
+                  .video-js .vjs-text-track-display {
+                    font-size: 28px !important;
+                    font-weight: bold !important;
+                    z-index: 999999 !important;
+                    pointer-events: none !important;
+                  }
+                  .video-js .vjs-text-track-cue {
+                    background-color: rgba(0, 0, 0, 0.8) !important;
+                    color: white !important;
+                    text-shadow: 2px 2px 4px black !important;
+                    border-radius: 4px !important;
+                    padding: 4px 8px !important;
+                    font-family: Arial, sans-serif !important;
+                    line-height: 1.2 !important;
+                  }
+                  .video-js .vjs-text-track-cue div {
+                    color: white !important;
+                    background: none !important;
+                  }
+                  /* Force subtitle display with manual override */
+                  .video-js .vjs-text-track-display div {
+                    position: absolute !important;
+                    bottom: 60px !important;
+                    left: 50% !important;
+                    transform: translateX(-50%) !important;
+                    white-space: pre-wrap !important;
+                    text-align: center !important;
+                    display: block !important;
+                    visibility: visible !important;
+                    opacity: 1 !important;
+                  }
+                `;
+
+                // Remove any existing style with same ID
+                const existingManualStyle = document.getElementById(
+                  "subtitle-enhancement-styles-manual"
+                );
+                if (existingManualStyle) {
+                  existingManualStyle.remove();
+                }
+
+                document.head.appendChild(style);
+                console.log("Enhanced subtitle CSS applied for manual track");
+
+                // After adding track, recheck if it's available
+                setTimeout(() => {
+                  const updatedTracks = this.textTracks();
+                  console.log("Tracks after manual addition:", updatedTracks);
+                  console.log("Updated tracks count:", updatedTracks.length);
+
+                  // Try to enable the track again
+                  if (updatedTracks && updatedTracks.length > 0) {
+                    for (let i = 0; i < updatedTracks.length; i++) {
+                      const t = updatedTracks[i];
+                      console.log(`Updated track ${i}:`, {
+                        kind: t.kind,
+                        label: t.label,
+                        mode: t.mode,
+                        src: t.src,
+                      });
+
+                      if (t.kind === "subtitles" || t.kind === "captions") {
+                        t.mode = "showing";
+                        console.log(
+                          `Enabled track after manual addition: ${t.label}, mode: ${t.mode}`
+                        );
+                      }
+                    }
+                  }
+                }, 1000);
+              } catch (error) {
+                console.error("Error manually adding subtitle track:", error);
+              }
+            }
+          }
 
           // Set initial playback speed from settings
           this.playbackRate(effectiveSettings.defaultSpeed);
@@ -1332,6 +1632,28 @@ const VideoPlayer = () => {
     nextButton.title = "Next Lecture";
     nextButton.style.display = player.isFullscreen() ? "flex" : "none";
 
+    // Create subtitle toggle button
+    const subtitleButton = document.createElement("button");
+    subtitleButton.className = "subtitle-toggle-button";
+    subtitleButton.innerHTML = "CC";
+    subtitleButton.title = "Toggle Subtitles";
+    subtitleButton.style.cssText = `
+      position: absolute;
+      bottom: 60px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 5px 10px;
+      font-size: 14px;
+      cursor: pointer;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    `;
+
     // Add click event listeners
     prevButton.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -1343,10 +1665,116 @@ const VideoPlayer = () => {
       navigateToLecture("next");
     });
 
+    // Add subtitle toggle functionality
+    subtitleButton.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const textTracks = player.textTracks();
+      let foundSubtitleTrack = false;
+
+      if (textTracks && textTracks.length > 0) {
+        for (let i = 0; i < textTracks.length; i++) {
+          const track = textTracks[i];
+          if (track.kind === "subtitles" || track.kind === "captions") {
+            foundSubtitleTrack = true;
+            // Toggle between showing and hidden
+            if (track.mode === "showing") {
+              track.mode = "hidden";
+              subtitleButton.style.color = "gray";
+              console.log("Subtitles disabled");
+            } else {
+              track.mode = "showing";
+              subtitleButton.style.color = "white";
+              console.log("Subtitles enabled");
+            }
+            break;
+          }
+        }
+      }
+
+      // If no subtitle tracks found in player's textTracks, try to add them
+      if (!foundSubtitleTrack) {
+        const remoteTextTracks = player.remoteTextTracks();
+        if (remoteTextTracks && remoteTextTracks.length > 0) {
+          // Found remote text tracks
+          for (let i = 0; i < remoteTextTracks.length; i++) {
+            const track = remoteTextTracks[i];
+            if (track.kind === "subtitles" || track.kind === "captions") {
+              foundSubtitleTrack = true;
+              // Toggle between showing and hidden
+              if (track.mode === "showing") {
+                track.mode = "hidden";
+                subtitleButton.style.color = "gray";
+                console.log("Remote subtitles disabled");
+              } else {
+                track.mode = "showing";
+                subtitleButton.style.color = "white";
+                console.log("Remote subtitles enabled");
+              }
+              break;
+            }
+          }
+        }
+
+        if (!foundSubtitleTrack) {
+          // If we still can't find subtitle tracks, try to manually add the SRT file
+          const videoPath = player.currentSrc();
+          if (videoPath && isElectron()) {
+            // Get the SRT file path based on the current video
+            window.electronAPI
+              .getSrtFilePath(
+                decodeURIComponent(videoPath.replace("file://", ""))
+              )
+              .then((srtFilePath) => {
+                // Check if the SRT file exists
+                return window.electronAPI
+                  .checkFileExists(srtFilePath)
+                  .then((exists) => {
+                    if (exists) {
+                      console.log(
+                        "Found SRT file for current video:",
+                        srtFilePath
+                      );
+                      const srtUrl = createVideoUrl(srtFilePath);
+
+                      // Add the track to the player
+                      const track = player.addRemoteTextTrack(
+                        {
+                          kind: "subtitles",
+                          label: "English",
+                          srclang: "en",
+                          src: srtUrl,
+                          default: true,
+                        },
+                        false
+                      );
+
+                      if (track) {
+                        track.track.mode = "showing";
+                        subtitleButton.style.color = "white";
+                        console.log("Added and enabled subtitles");
+                      }
+                    } else {
+                      console.log("No subtitle file found for current video");
+                    }
+                  });
+              })
+              .catch((error) => {
+                console.error("Error checking for subtitle file:", error);
+              });
+          } else {
+            console.log(
+              "No subtitle tracks available and cannot determine video path"
+            );
+          }
+        }
+      }
+    });
+
     // Add buttons to the player container
     const playerContainer = player.el();
     playerContainer.appendChild(prevButton);
     playerContainer.appendChild(nextButton);
+    playerContainer.appendChild(subtitleButton);
   };
 
   // Separate effect for player initialization
