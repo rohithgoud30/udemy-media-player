@@ -198,47 +198,45 @@ textarea {
 }
 
 .btn-primary:hover {
-  background: var(--primary-gradient-hover);
-  box-shadow: var(--shadow-lg), var(--shadow-glow);
-  transform: translateY(-1px);
+  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 
 .btn-secondary {
   background: var(--background-card);
   color: var(--text-primary);
   border: 1px solid var(--border-primary);
-  box-shadow: var(--shadow-sm);
 }
 
 .btn-secondary:hover {
-  background: var(--background-card-hover);
-  border-color: var(--border-accent);
-  box-shadow: var(--shadow-md);
+  background: var(--background-elevated);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.3);
   transform: translateY(-1px);
 }
 
 .btn-ghost {
   background: transparent;
   color: var(--text-secondary);
-  border: 1px solid var(--border-secondary);
 }
 
 .btn-ghost:hover {
-  background: var(--background-card);
-  color: var(--text-primary);
-  border-color: var(--border-primary);
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
 }
 
 /* Enhanced Links */
 a {
-  color: var(--text-accent);
+  color: var(--text-secondary);
   text-decoration: none;
-  transition: all var(--transition-fast);
+  transition: all var(--transition-normal);
 }
 
 a:hover {
-  color: var(--primary-light);
-  text-shadow: 0 0 8px rgba(139, 95, 248, 0.5);
+  color: white;
+  text-decoration: none;
 }
 
 /* Layout Improvements */
@@ -498,7 +496,7 @@ a:hover {
 }
 
 .nav-links a:hover {
-  color: var(--text-primary);
+  color: white;
   background: var(--background-card);
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
@@ -567,8 +565,8 @@ a:hover {
 
 .search-input:focus,
 .sort-select:focus {
-  border-color: var(--text-accent);
-  box-shadow: 0 0 0 3px rgba(139, 95, 248, 0.1);
+  border-color: #ff6b35;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.2);
   outline: none;
 }
 
@@ -1428,23 +1426,13 @@ a:hover {
 }
 
 .mini-lecture-item.active {
-  background-color: rgba(164, 53, 240, 0.15);
-  border-color: var(--primary-color);
-}
-
-.mini-lecture-status {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  margin-right: 12px;
-  color: var(--text-secondary);
-  font-size: 0.85rem;
+  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+  color: white;
+  box-shadow: var(--shadow-md);
 }
 
 .mini-lecture-item.active .mini-lecture-status {
-  color: var(--primary-color);
+  color: white;
 }
 
 .mini-lecture-item.completed .mini-lecture-status {
@@ -1502,7 +1490,7 @@ a:hover {
 }
 
 .completion-status.in-progress {
-  color: var(--primary-color);
+  color: #ff6b35;
 }
 
 .completion-status.not-started {
@@ -1518,7 +1506,7 @@ a:hover {
 
 .mark-complete-button {
   padding: 0.75rem 1.5rem;
-  background-color: var(--primary-color);
+  background-color: #ff6b35;
   color: white;
   border: none;
   border-radius: 4px;
@@ -1528,7 +1516,8 @@ a:hover {
 }
 
 .mark-complete-button:hover {
-  background-color: var(--primary-hover);
+  background-color: #f7931e;
+  color: white;
 }
 
 .mark-complete-button.completed {
@@ -1959,7 +1948,7 @@ a:hover {
 
 /* Enhanced Focus States */
 *:focus-visible {
-  outline: 2px solid var(--text-accent);
+  outline: 2px solid #ff6b35;
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
@@ -1994,4 +1983,36 @@ a:hover {
 
 .animate-shimmer {
   animation: shimmer 2s infinite;
+}
+
+.mini-lecture-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-right: 12px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.mini-lecture-title {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mini-lecture-item:hover .mini-lecture-title {
+  color: white;
+}
+
+.mini-lecture-item:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.mini-lecture-item:hover .mini-lecture-status {
+  color: rgba(255, 255, 255, 0.8);
 }
