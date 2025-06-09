@@ -117,24 +117,27 @@
   will-change: transform;
 }
 
-/* Show thumb on hover or drag */
+/* Always show thumb on any progress container interaction */
 .progress-container:hover .progress-thumb,
-.progress-bar:hover .progress-thumb {
-  opacity: 1;
+.progress-bar:hover .progress-thumb,
+.progress-container:focus-within .progress-thumb {
+  opacity: 1 !important;
   transform: translate3d(-50%, -50%, 0) scale(1.1);
   box-shadow: 0 4px 12px rgba(255, 107, 53, 0.6);
   width: 18px;
   height: 18px;
   transition: none;
+  visibility: visible;
 }
 
 .progress-bar.dragging .progress-thumb {
-  opacity: 1;
+  opacity: 1 !important;
   transform: translate3d(-50%, -50%, 0) scale(1.2);
   box-shadow: 0 6px 16px rgba(255, 107, 53, 0.8);
   width: 20px;
   height: 20px;
   transition: none;
+  visibility: visible;
 }
 
 /* Enhanced hover effect for progress bar */
