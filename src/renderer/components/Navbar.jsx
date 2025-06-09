@@ -1,5 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faCog } from "@fortawesome/free-solid-svg-icons";
 
 const Navbar = () => {
   const location = useLocation();
@@ -28,8 +30,9 @@ const Navbar = () => {
         <Link
           to="/settings"
           className={location.pathname === "/settings" ? "active" : ""}
+          title="Settings"
         >
-          <span>Settings</span>
+          <FontAwesomeIcon icon={faCog} />
         </Link>
       </div>
     </nav>

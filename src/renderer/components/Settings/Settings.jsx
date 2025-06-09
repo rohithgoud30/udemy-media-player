@@ -15,14 +15,6 @@ const DEFAULT_SETTINGS = {
     autoPlayNext: true, // Always true by default
   },
 
-  // Subtitle settings
-  subtitles: {
-    enabled: true,
-    fontSize: "medium",
-    fontColor: "white",
-    backgroundColor: "black",
-  },
-
   // Keyboard shortcuts
   shortcuts: {
     playPause: "Space",
@@ -60,10 +52,6 @@ const Settings = () => {
               ...DEFAULT_SETTINGS.playback,
               ...(parsed.playback || {}),
             },
-            subtitles: {
-              ...DEFAULT_SETTINGS.subtitles,
-              ...(parsed.subtitles || {}),
-            },
             shortcuts: {
               ...DEFAULT_SETTINGS.shortcuts,
               ...(parsed.shortcuts || {}),
@@ -82,10 +70,6 @@ const Settings = () => {
                 playback: {
                   ...DEFAULT_SETTINGS.playback,
                   ...(electronSettings.playback || {}),
-                },
-                subtitles: {
-                  ...DEFAULT_SETTINGS.subtitles,
-                  ...(electronSettings.subtitles || {}),
                 },
                 shortcuts: {
                   ...DEFAULT_SETTINGS.shortcuts,
@@ -149,6 +133,32 @@ const Settings = () => {
         [setting]: value,
       },
     }));
+
+    // Auto-save for playback speed changes
+    if (section === "playback" && setting === "defaultSpeed") {
+      setTimeout(() => {
+        try {
+          const updatedSettings = {
+            ...settings,
+            playback: {
+              ...settings.playback,
+              [setting]: value,
+              rememberPosition: true, // Always true
+              autoMarkCompleted: true, // Always true
+              autoPlayNext: true, // Always true
+            },
+          };
+
+          localStorage.setItem(
+            "udemyPlayerSettings",
+            JSON.stringify(updatedSettings)
+          );
+          console.log(`💾 Auto-saved playback speed: ${value}x`);
+        } catch (error) {
+          console.error("Error auto-saving playback speed:", error);
+        }
+      }, 100); // Small delay to ensure state is updated
+    }
   };
 
   // Reset to defaults
@@ -206,74 +216,6 @@ const Settings = () => {
             />
             Auto-play videos when opening
           </label>
-        </div>
-      </div>
-
-      <div className="settings-section">
-        <h2>Subtitle Settings</h2>
-
-        <div className="setting-item">
-          <label>
-            <input
-              type="checkbox"
-              checked={settings.subtitles?.enabled || true}
-              onChange={(e) =>
-                handleInputChange("subtitles", "enabled", e.target.checked)
-              }
-            />
-            Enable subtitles when available
-          </label>
-        </div>
-
-        <div className="setting-item">
-          <label htmlFor="subtitleFontSize">Font Size:</label>
-          <select
-            id="subtitleFontSize"
-            value={settings.subtitles?.fontSize || "medium"}
-            onChange={(e) =>
-              handleInputChange("subtitles", "fontSize", e.target.value)
-            }
-          >
-            <option value="small">Small</option>
-            <option value="medium">Medium</option>
-            <option value="large">Large</option>
-            <option value="x-large">Extra Large</option>
-          </select>
-        </div>
-
-        <div className="setting-item">
-          <label htmlFor="subtitleFontColor">Font Color:</label>
-          <select
-            id="subtitleFontColor"
-            value={settings.subtitles?.fontColor || "white"}
-            onChange={(e) =>
-              handleInputChange("subtitles", "fontColor", e.target.value)
-            }
-          >
-            <option value="white">White</option>
-            <option value="yellow">Yellow</option>
-            <option value="green">Green</option>
-            <option value="red">Red</option>
-            <option value="blue">Blue</option>
-            <option value="cyan">Cyan</option>
-          </select>
-        </div>
-
-        <div className="setting-item">
-          <label htmlFor="subtitleBackgroundColor">Background Color:</label>
-          <select
-            id="subtitleBackgroundColor"
-            value={settings.subtitles?.backgroundColor || "black"}
-            onChange={(e) =>
-              handleInputChange("subtitles", "backgroundColor", e.target.value)
-            }
-          >
-            <option value="black">Black</option>
-            <option value="transparent">Transparent</option>
-            <option value="semi-transparent">Semi-transparent</option>
-            <option value="dark-blue">Dark Blue</option>
-            <option value="dark-green">Dark Green</option>
-          </select>
         </div>
       </div>
 

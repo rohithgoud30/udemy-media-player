@@ -10,12 +10,6 @@ const DEFAULT_SETTINGS = {
     autoMarkCompleted: true, // Always forced to true
     autoPlayNext: true, // Always forced to true
   },
-  subtitles: {
-    enabled: true,
-    fontSize: "medium",
-    fontColor: "white",
-    backgroundColor: "black",
-  },
   shortcuts: {
     playPause: "Space",
     seekForward: "ArrowRight",
@@ -61,10 +55,6 @@ class SettingsManager {
           playback: {
             ...DEFAULT_SETTINGS.playback,
             ...(parsed.playback || {}),
-          },
-          subtitles: {
-            ...DEFAULT_SETTINGS.subtitles,
-            ...(parsed.subtitles || {}),
           },
           shortcuts: {
             ...DEFAULT_SETTINGS.shortcuts,
