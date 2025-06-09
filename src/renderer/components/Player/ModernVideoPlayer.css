@@ -59,7 +59,7 @@
 }
 
 .modern-video-container:hover .video-controls {
-  opacity: 1;
+  opacity: 1 !important;
   pointer-events: all;
 }
 
@@ -825,7 +825,7 @@
 }
 
 .modern-video-container:fullscreen:hover .video-controls {
-  opacity: 1;
+  opacity: 1 !important;
 }
 
 /* Subtitle Styling - Modern video player style */
