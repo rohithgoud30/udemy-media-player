@@ -811,11 +811,11 @@
   opacity: 1;
 }
 
-/* Subtitle Styling - Dynamic based on user settings */
+/* Subtitle Styling - Default styles (overridden by dynamic CSS) */
 .modern-video-container video::cue {
-  background-color: var(--subtitle-background-color, rgba(0, 0, 0, 0.85));
-  color: var(--subtitle-font-color, white);
-  font-size: var(--subtitle-font-size, 1.1rem);
+  background-color: rgba(0, 0, 0, 0.85);
+  color: white;
+  font-size: 1.1rem;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Inter",
     Arial, sans-serif;
   font-weight: 500;
@@ -829,8 +829,8 @@
 
 /* Active subtitle styling */
 .modern-video-container video::cue(.active) {
-  background-color: var(--subtitle-background-color, rgba(0, 0, 0, 0.9));
-  color: var(--subtitle-font-color, #ffffff);
+  background-color: rgba(0, 0, 0, 0.9);
+  color: #ffffff;
 }
 
 /* Subtitle positioning - Keep above controls */
@@ -869,9 +869,9 @@
 
 /* Firefox subtitle styling */
 .modern-video-container video::cue {
-  font-size: var(--subtitle-font-size, 1.1rem) !important;
-  background: var(--subtitle-background-color, rgba(0, 0, 0, 0.85)) !important;
-  color: var(--subtitle-font-color, white) !important;
+  font-size: 1.1rem !important;
+  background: rgba(0, 0, 0, 0.85) !important;
+  color: white !important;
 }
 
 /* Focus styles for accessibility */

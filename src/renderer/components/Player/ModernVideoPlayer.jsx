@@ -185,89 +185,147 @@ const ModernVideoPlayer = () => {
 
   // Load player settings and subtitle settings
   useEffect(() => {
-    try {
-      const savedSettings = localStorage.getItem("udemyPlayerSettings");
-      if (savedSettings) {
-        const parsedSettings = JSON.parse(savedSettings);
+    const loadSettingsFromStorage = () => {
+      try {
+        const savedSettings = localStorage.getItem("udemyPlayerSettings");
+        if (savedSettings) {
+          const parsedSettings = JSON.parse(savedSettings);
 
-        // Load playback settings
-        if (parsedSettings.playback) {
-          setPlayerSettings({
-            defaultSpeed: parsedSettings.playback.defaultSpeed || 1.0,
-            autoPlay:
-              parsedSettings.playback.autoPlay !== undefined
-                ? parsedSettings.playback.autoPlay
-                : true,
-            rememberPosition: true, // Always true
-            autoMarkCompleted: true, // Always true
-            autoPlayNext: true, // Always true
-          });
-        }
+          // Load playback settings
+          if (parsedSettings.playback) {
+            setPlayerSettings({
+              defaultSpeed: parsedSettings.playback.defaultSpeed || 1.0,
+              autoPlay:
+                parsedSettings.playback.autoPlay !== undefined
+                  ? parsedSettings.playback.autoPlay
+                  : true,
+              rememberPosition: true, // Always true
+              autoMarkCompleted: true, // Always true
+              autoPlayNext: true, // Always true
+            });
+          }
 
-        // Load subtitle settings
-        if (parsedSettings.subtitles) {
-          setSubtitleSettings({
-            enabled:
-              parsedSettings.subtitles.enabled !== undefined
-                ? parsedSettings.subtitles.enabled
-                : true,
-            fontSize: parsedSettings.subtitles.fontSize || "medium",
-            fontColor: parsedSettings.subtitles.fontColor || "white",
-            backgroundColor:
-              parsedSettings.subtitles.backgroundColor || "black",
-          });
+          // Load subtitle settings
+          if (parsedSettings.subtitles) {
+            setSubtitleSettings({
+              enabled:
+                parsedSettings.subtitles.enabled !== undefined
+                  ? parsedSettings.subtitles.enabled
+                  : true,
+              fontSize: parsedSettings.subtitles.fontSize || "medium",
+              fontColor: parsedSettings.subtitles.fontColor || "white",
+              backgroundColor:
+                parsedSettings.subtitles.backgroundColor || "black",
+            });
+          }
         }
+      } catch (error) {
+        console.error("Error loading player settings:", error);
       }
-    } catch (error) {
-      console.error("Error loading player settings:", error);
-    }
+    };
+
+    // Load settings initially
+    loadSettingsFromStorage();
+
+    // Listen for storage changes (when settings are saved from Settings page)
+    const handleStorageChange = (e) => {
+      if (e.key === "udemyPlayerSettings") {
+        console.log("📢 Settings updated from Settings page, reloading...");
+        loadSettingsFromStorage();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
   }, []);
 
   // Apply subtitle styling to video element
   useEffect(() => {
     if (videoRef.current) {
-      const video = videoRef.current;
+      // Create or update dynamic subtitle CSS
+      const createSubtitleCSS = () => {
+        const fontSize =
+          {
+            small: "0.9rem",
+            medium: "1.1rem",
+            large: "1.4rem",
+            "x-large": "1.7rem",
+          }[subtitleSettings.fontSize] || "1.1rem";
 
-      // Apply custom CSS variables for subtitle styling
-      const fontSize =
-        {
-          small: "0.9rem",
-          medium: "1.1rem",
-          large: "1.4rem",
-          "x-large": "1.7rem",
-        }[subtitleSettings.fontSize] || "1.1rem";
+        const fontColor =
+          {
+            white: "#ffffff",
+            yellow: "#ffff00",
+            green: "#00ff00",
+            red: "#ff0000",
+            blue: "#0066ff",
+            cyan: "#00ffff",
+          }[subtitleSettings.fontColor] || "#ffffff";
 
-      const fontColor =
-        {
-          white: "#ffffff",
-          yellow: "#ffff00",
-          green: "#00ff00",
-          red: "#ff0000",
-          blue: "#0066ff",
-          cyan: "#00ffff",
-        }[subtitleSettings.fontColor] || "#ffffff";
+        const backgroundColor =
+          {
+            black: "rgba(0, 0, 0, 0.85)",
+            transparent: "transparent",
+            "semi-transparent": "rgba(0, 0, 0, 0.5)",
+            "dark-blue": "rgba(0, 30, 60, 0.85)",
+            "dark-green": "rgba(0, 40, 20, 0.85)",
+          }[subtitleSettings.backgroundColor] || "rgba(0, 0, 0, 0.85)";
 
-      const backgroundColor =
-        {
-          black: "rgba(0, 0, 0, 0.85)",
-          transparent: "transparent",
-          "semi-transparent": "rgba(0, 0, 0, 0.5)",
-          "dark-blue": "rgba(0, 30, 60, 0.85)",
-          "dark-green": "rgba(0, 40, 20, 0.85)",
-        }[subtitleSettings.backgroundColor] || "rgba(0, 0, 0, 0.85)";
+        return `
+          .modern-video-container video::cue {
+            background-color: ${backgroundColor} !important;
+            color: ${fontColor} !important;
+            font-size: ${fontSize} !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Inter", Arial, sans-serif !important;
+            font-weight: 500 !important;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.9) !important;
+            line-height: 1.3 !important;
+            padding: 6px 12px !important;
+            border-radius: 4px !important;
+            margin-bottom: 15px !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+          }
+          
+          .modern-video-container video::cue(.active) {
+            background-color: ${backgroundColor} !important;
+            color: ${fontColor} !important;
+          }
+        `;
+      };
 
-      // Set CSS custom properties on the video container
-      const container = containerRef.current;
-      if (container) {
-        container.style.setProperty("--subtitle-font-size", fontSize);
-        container.style.setProperty("--subtitle-font-color", fontColor);
-        container.style.setProperty(
-          "--subtitle-background-color",
-          backgroundColor
-        );
+      // Remove existing subtitle style if it exists
+      const existingStyle = document.getElementById("dynamic-subtitle-styles");
+      if (existingStyle) {
+        existingStyle.remove();
       }
+
+      // Create and inject new style
+      const styleElement = document.createElement("style");
+      styleElement.id = "dynamic-subtitle-styles";
+      styleElement.textContent = createSubtitleCSS();
+      document.head.appendChild(styleElement);
+
+      console.log("🎨 Applied subtitle styles:", {
+        fontSize: subtitleSettings.fontSize,
+        fontColor: subtitleSettings.fontColor,
+        backgroundColor: subtitleSettings.backgroundColor,
+      });
     }
   }, [subtitleSettings]);
+
+  // Cleanup dynamic styles on unmount
+  useEffect(() => {
+    return () => {
+      const existingStyle = document.getElementById("dynamic-subtitle-styles");
+      if (existingStyle) {
+        existingStyle.remove();
+        console.log("🧹 Cleaned up dynamic subtitle styles");
+      }
+    };
+  }, []);
 
   // Navigate to lecture function
   const navigateToLecture = useCallback(
