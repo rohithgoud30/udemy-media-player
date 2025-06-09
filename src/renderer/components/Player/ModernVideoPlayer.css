@@ -156,18 +156,21 @@
   align-items: center;
   gap: 20px;
   padding: 0 4px;
+  height: 42px; /* Fixed height for consistent alignment */
 }
 
 .controls-left {
   display: flex;
   align-items: center;
   gap: 12px;
+  height: 42px; /* Match controls-row height */
 }
 
 .controls-right {
   display: flex;
   align-items: center;
   gap: 12px;
+  height: 42px; /* Match controls-row height */
 }
 
 /* Control Buttons */
@@ -188,6 +191,7 @@
   backdrop-filter: blur(8px);
   position: relative;
   overflow: hidden;
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 /* FontAwesome Icon Styling */
@@ -283,6 +287,7 @@
   align-items: center;
   gap: 8px;
   margin: 0 8px;
+  height: 42px; /* Match button height */
 }
 
 .volume-bar {
@@ -294,6 +299,7 @@
   position: relative;
   transition: height 0.15s ease;
   user-select: none;
+  align-self: center; /* Center vertically within container */
 }
 
 .volume-bar:hover {
@@ -348,6 +354,11 @@
   border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(4px);
+  height: 30px; /* Slightly smaller than buttons for balance */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 /* Speed Select */
@@ -363,7 +374,12 @@
   transition: all 0.2s ease;
   backdrop-filter: blur(8px);
   min-width: 60px;
+  height: 42px; /* Match button height */
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 .speed-select:hover {
