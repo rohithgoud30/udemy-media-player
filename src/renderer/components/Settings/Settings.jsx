@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import './Settings.css'
-import ElectronTest from '../ElectronTest'
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import "./Settings.css";
+import ElectronTest from "../ElectronTest";
 
 // Define default settings object outside the component for reuse
 const DEFAULT_SETTINGS = {
@@ -9,63 +9,63 @@ const DEFAULT_SETTINGS = {
   playback: {
     defaultSpeed: 1.0,
     autoPlay: true,
-    preferredQuality: 'auto',
-    rememberPosition: true,
-    autoMarkCompleted: true,
-    autoPlayNext: true,
+    preferredQuality: "auto",
+    rememberPosition: true, // Always true by default
+    autoMarkCompleted: true, // Always true by default
+    autoPlayNext: true, // Always true by default
   },
 
   // Subtitle settings
   subtitles: {
     enabled: true,
-    fontSize: 'medium',
-    fontColor: 'white',
-    backgroundColor: 'black',
+    fontSize: "medium",
+    fontColor: "white",
+    backgroundColor: "black",
   },
 
   // Interface settings
   interface: {
-    theme: 'dark', // 'dark' or 'light'
+    theme: "dark", // 'dark' or 'light'
     sidebarExpanded: true,
     showCourseThumbnails: true,
-    courseSortOrder: 'newest',
+    courseSortOrder: "newest",
   },
 
   // Storage settings
   storage: {
-    downloadLocation: '',
+    downloadLocation: "",
     maxConcurrentDownloads: 2,
     deleteCompletedCourses: false,
   },
 
   // Keyboard shortcuts
   shortcuts: {
-    playPause: 'Space',
-    seekForward: 'ArrowRight',
-    seekBackward: 'ArrowLeft',
-    volumeUp: 'ArrowUp',
-    volumeDown: 'ArrowDown',
-    toggleFullscreen: 'f',
+    playPause: "Space",
+    seekForward: "ArrowRight",
+    seekBackward: "ArrowLeft",
+    volumeUp: "ArrowUp",
+    volumeDown: "ArrowDown",
+    toggleFullscreen: "f",
   },
-}
+};
 
 const Settings = () => {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   // Default settings state
-  const [settings, setSettings] = useState(DEFAULT_SETTINGS)
-  const [isLoading, setIsLoading] = useState(true)
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Load settings from local storage on component mount
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        setIsLoading(true)
+        setIsLoading(true);
         // Try to load from localStorage first
-        const savedSettings = localStorage.getItem('udemyPlayerSettings')
+        const savedSettings = localStorage.getItem("udemyPlayerSettings");
 
         if (savedSettings) {
-          const parsed = JSON.parse(savedSettings)
+          const parsed = JSON.parse(savedSettings);
           // Ensure we have all required properties by merging with defaults
           setSettings({
             ...DEFAULT_SETTINGS,
@@ -91,11 +91,11 @@ const Settings = () => {
               ...DEFAULT_SETTINGS.shortcuts,
               ...(parsed.shortcuts || {}),
             },
-          })
+          });
         } else if (window.electronAPI) {
           // If using Electron, we can also try to load from a settings file
           // This is just a placeholder - implement based on your IPC methods
-          const electronSettings = await window.electronAPI.getSettings()
+          const electronSettings = await window.electronAPI.getSettings();
           if (electronSettings) {
             setSettings({
               ...DEFAULT_SETTINGS,
@@ -121,39 +121,53 @@ const Settings = () => {
                 ...DEFAULT_SETTINGS.shortcuts,
                 ...(electronSettings.shortcuts || {}),
               },
-            })
+            });
           }
         }
       } catch (error) {
-        console.error('Error loading settings:', error)
+        console.error("Error loading settings:", error);
         // On error, use default settings
-        setSettings(DEFAULT_SETTINGS)
+        setSettings(DEFAULT_SETTINGS);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    loadSettings()
-  }, [])
+    loadSettings();
+  }, []);
 
   // Save settings
   const saveSettings = async () => {
     try {
+      // Force critical settings to always be true
+      const settingsToSave = {
+        ...settings,
+        playback: {
+          ...settings.playback,
+          rememberPosition: true, // Always true
+          autoMarkCompleted: true, // Always true
+          autoPlayNext: true, // Always true
+        },
+      };
+
       // Save to localStorage
-      localStorage.setItem('udemyPlayerSettings', JSON.stringify(settings))
+      localStorage.setItem(
+        "udemyPlayerSettings",
+        JSON.stringify(settingsToSave)
+      );
 
       // If using Electron, also save to a file
       if (window.electronAPI) {
-        await window.electronAPI.saveSettings(settings)
+        await window.electronAPI.saveSettings(settingsToSave);
       }
 
       // Show success message (could be implemented with a toast notification)
-      alert('Settings saved successfully!')
+      alert("Settings saved successfully!");
     } catch (error) {
-      console.error('Error saving settings:', error)
-      alert('Failed to save settings.')
+      console.error("Error saving settings:", error);
+      alert("Failed to save settings.");
     }
-  }
+  };
 
   // Handle input changes
   const handleInputChange = (section, setting, value) => {
@@ -163,59 +177,59 @@ const Settings = () => {
         ...(prevSettings[section] || {}),
         [setting]: value,
       },
-    }))
-  }
+    }));
+  };
 
   // Reset to defaults
   const resetDefaults = () => {
     if (
-      window.confirm('Are you sure you want to reset all settings to defaults?')
+      window.confirm("Are you sure you want to reset all settings to defaults?")
     ) {
-      localStorage.removeItem('udemyPlayerSettings')
-      setSettings(DEFAULT_SETTINGS)
+      localStorage.removeItem("udemyPlayerSettings");
+      setSettings(DEFAULT_SETTINGS);
     }
-  }
+  };
 
   // Choose download location (Electron only)
   const chooseDownloadLocation = async () => {
     if (!window.electronAPI) {
-      alert('This feature is only available in the desktop app.')
-      return
+      alert("This feature is only available in the desktop app.");
+      return;
     }
 
     try {
-      console.log('Calling selectDirectory from Settings...')
-      const dirPath = await window.electronAPI.selectDirectory()
-      console.log('Selected directory:', dirPath)
+      console.log("Calling selectDirectory from Settings...");
+      const dirPath = await window.electronAPI.selectDirectory();
+      console.log("Selected directory:", dirPath);
       if (dirPath) {
-        handleInputChange('storage', 'downloadLocation', dirPath)
+        handleInputChange("storage", "downloadLocation", dirPath);
       }
     } catch (error) {
-      console.error('Error selecting directory:', error)
-      alert('Error selecting directory: ' + error.message)
+      console.error("Error selecting directory:", error);
+      alert("Error selecting directory: " + error.message);
     }
-  }
+  };
 
   if (isLoading) {
-    return <div className='loading'>Loading settings...</div>
+    return <div className="loading">Loading settings...</div>;
   }
 
   return (
-    <div className='settings-container'>
+    <div className="settings-container">
       <h1>Settings</h1>
 
-      <div className='settings-section'>
+      <div className="settings-section">
         <h2>Playback Settings</h2>
 
-        <div className='setting-item'>
-          <label htmlFor='defaultSpeed'>Default Playback Speed:</label>
+        <div className="setting-item">
+          <label htmlFor="defaultSpeed">Default Playback Speed:</label>
           <select
-            id='defaultSpeed'
+            id="defaultSpeed"
             value={settings.playback?.defaultSpeed || 1.0}
             onChange={(e) =>
               handleInputChange(
-                'playback',
-                'defaultSpeed',
+                "playback",
+                "defaultSpeed",
                 parseFloat(e.target.value)
               )
             }
@@ -230,155 +244,108 @@ const Settings = () => {
           </select>
         </div>
 
-        <div className='setting-item'>
+        <div className="setting-item">
           <label>
             <input
-              type='checkbox'
+              type="checkbox"
               checked={settings.playback?.autoPlay || false}
               onChange={(e) =>
-                handleInputChange('playback', 'autoPlay', e.target.checked)
+                handleInputChange("playback", "autoPlay", e.target.checked)
               }
             />
             Auto-play videos when opening
           </label>
         </div>
-
-        <div className='setting-item'>
-          <label>
-            <input
-              type='checkbox'
-              checked={settings.playback?.rememberPosition || true}
-              onChange={(e) =>
-                handleInputChange(
-                  'playback',
-                  'rememberPosition',
-                  e.target.checked
-                )
-              }
-            />
-            Remember playback position
-          </label>
-        </div>
-
-        <div className='setting-item'>
-          <label>
-            <input
-              type='checkbox'
-              checked={settings.playback?.autoMarkCompleted || true}
-              onChange={(e) =>
-                handleInputChange(
-                  'playback',
-                  'autoMarkCompleted',
-                  e.target.checked
-                )
-              }
-            />
-            Mark videos as completed when finished
-          </label>
-        </div>
-
-        <div className='setting-item'>
-          <label>
-            <input
-              type='checkbox'
-              checked={settings.playback?.autoPlayNext || true}
-              onChange={(e) =>
-                handleInputChange('playback', 'autoPlayNext', e.target.checked)
-              }
-            />
-            Auto-play next lecture when finished
-          </label>
-        </div>
       </div>
 
-      <div className='settings-section'>
+      <div className="settings-section">
         <h2>Subtitle Settings</h2>
 
-        <div className='setting-item'>
+        <div className="setting-item">
           <label>
             <input
-              type='checkbox'
+              type="checkbox"
               checked={settings.subtitles?.enabled || true}
               onChange={(e) =>
-                handleInputChange('subtitles', 'enabled', e.target.checked)
+                handleInputChange("subtitles", "enabled", e.target.checked)
               }
             />
             Enable subtitles when available
           </label>
         </div>
 
-        <div className='setting-item'>
-          <label htmlFor='subtitleFontSize'>Font Size:</label>
+        <div className="setting-item">
+          <label htmlFor="subtitleFontSize">Font Size:</label>
           <select
-            id='subtitleFontSize'
-            value={settings.subtitles?.fontSize || 'medium'}
+            id="subtitleFontSize"
+            value={settings.subtitles?.fontSize || "medium"}
             onChange={(e) =>
-              handleInputChange('subtitles', 'fontSize', e.target.value)
+              handleInputChange("subtitles", "fontSize", e.target.value)
             }
           >
-            <option value='small'>Small</option>
-            <option value='medium'>Medium</option>
-            <option value='large'>Large</option>
+            <option value="small">Small</option>
+            <option value="medium">Medium</option>
+            <option value="large">Large</option>
           </select>
         </div>
 
-        <div className='setting-item'>
-          <label htmlFor='subtitleFontColor'>Font Color:</label>
+        <div className="setting-item">
+          <label htmlFor="subtitleFontColor">Font Color:</label>
           <select
-            id='subtitleFontColor'
-            value={settings.subtitles?.fontColor || 'white'}
+            id="subtitleFontColor"
+            value={settings.subtitles?.fontColor || "white"}
             onChange={(e) =>
-              handleInputChange('subtitles', 'fontColor', e.target.value)
+              handleInputChange("subtitles", "fontColor", e.target.value)
             }
           >
-            <option value='white'>White</option>
-            <option value='yellow'>Yellow</option>
-            <option value='green'>Green</option>
+            <option value="white">White</option>
+            <option value="yellow">Yellow</option>
+            <option value="green">Green</option>
           </select>
         </div>
 
-        <div className='setting-item'>
-          <label htmlFor='subtitleBackgroundColor'>Background Color:</label>
+        <div className="setting-item">
+          <label htmlFor="subtitleBackgroundColor">Background Color:</label>
           <select
-            id='subtitleBackgroundColor'
-            value={settings.subtitles?.backgroundColor || 'black'}
+            id="subtitleBackgroundColor"
+            value={settings.subtitles?.backgroundColor || "black"}
             onChange={(e) =>
-              handleInputChange('subtitles', 'backgroundColor', e.target.value)
+              handleInputChange("subtitles", "backgroundColor", e.target.value)
             }
           >
-            <option value='black'>Black</option>
-            <option value='transparent'>Transparent</option>
-            <option value='blue'>Blue</option>
+            <option value="black">Black</option>
+            <option value="transparent">Transparent</option>
+            <option value="blue">Blue</option>
           </select>
         </div>
       </div>
 
-      <div className='settings-section'>
+      <div className="settings-section">
         <h2>Interface Settings</h2>
 
-        <div className='setting-item'>
-          <label htmlFor='theme'>Theme:</label>
+        <div className="setting-item">
+          <label htmlFor="theme">Theme:</label>
           <select
-            id='theme'
-            value={settings.interface?.theme || 'dark'}
+            id="theme"
+            value={settings.interface?.theme || "dark"}
             onChange={(e) =>
-              handleInputChange('interface', 'theme', e.target.value)
+              handleInputChange("interface", "theme", e.target.value)
             }
           >
-            <option value='dark'>Dark</option>
-            <option value='light'>Light</option>
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
           </select>
         </div>
 
-        <div className='setting-item'>
+        <div className="setting-item">
           <label>
             <input
-              type='checkbox'
+              type="checkbox"
               checked={settings.interface?.sidebarExpanded || true}
               onChange={(e) =>
                 handleInputChange(
-                  'interface',
-                  'sidebarExpanded',
+                  "interface",
+                  "sidebarExpanded",
                   e.target.checked
                 )
               }
@@ -387,15 +354,15 @@ const Settings = () => {
           </label>
         </div>
 
-        <div className='setting-item'>
+        <div className="setting-item">
           <label>
             <input
-              type='checkbox'
+              type="checkbox"
               checked={settings.interface?.showCourseThumbnails || true}
               onChange={(e) =>
                 handleInputChange(
-                  'interface',
-                  'showCourseThumbnails',
+                  "interface",
+                  "showCourseThumbnails",
                   e.target.checked
                 )
               }
@@ -404,35 +371,35 @@ const Settings = () => {
           </label>
         </div>
 
-        <div className='setting-item'>
-          <label htmlFor='courseSortOrder'>Course Sort Order:</label>
+        <div className="setting-item">
+          <label htmlFor="courseSortOrder">Course Sort Order:</label>
           <select
-            id='courseSortOrder'
-            value={settings.interface?.courseSortOrder || 'newest'}
+            id="courseSortOrder"
+            value={settings.interface?.courseSortOrder || "newest"}
             onChange={(e) =>
-              handleInputChange('interface', 'courseSortOrder', e.target.value)
+              handleInputChange("interface", "courseSortOrder", e.target.value)
             }
           >
-            <option value='newest'>Newest First</option>
-            <option value='oldest'>Oldest First</option>
-            <option value='alphabetical'>Alphabetical</option>
-            <option value='lastWatched'>Last Watched</option>
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="alphabetical">Alphabetical</option>
+            <option value="lastWatched">Last Watched</option>
           </select>
         </div>
       </div>
 
-      <div className='settings-section'>
+      <div className="settings-section">
         <h2>Storage Settings</h2>
 
-        <div className='setting-item download-location'>
-          <label htmlFor='downloadLocation'>Download Location:</label>
-          <div className='download-path-input'>
+        <div className="setting-item download-location">
+          <label htmlFor="downloadLocation">Download Location:</label>
+          <div className="download-path-input">
             <input
-              type='text'
-              id='downloadLocation'
-              value={settings.storage?.downloadLocation || ''}
+              type="text"
+              id="downloadLocation"
+              value={settings.storage?.downloadLocation || ""}
               onChange={(e) =>
-                handleInputChange('storage', 'downloadLocation', e.target.value)
+                handleInputChange("storage", "downloadLocation", e.target.value)
               }
               readOnly
             />
@@ -440,17 +407,17 @@ const Settings = () => {
           </div>
         </div>
 
-        <div className='setting-item'>
-          <label htmlFor='maxConcurrentDownloads'>
+        <div className="setting-item">
+          <label htmlFor="maxConcurrentDownloads">
             Max Concurrent Downloads:
           </label>
           <select
-            id='maxConcurrentDownloads'
+            id="maxConcurrentDownloads"
             value={settings.storage?.maxConcurrentDownloads || 2}
             onChange={(e) =>
               handleInputChange(
-                'storage',
-                'maxConcurrentDownloads',
+                "storage",
+                "maxConcurrentDownloads",
                 parseInt(e.target.value)
               )
             }
@@ -464,77 +431,77 @@ const Settings = () => {
         </div>
       </div>
 
-      <div className='settings-section'>
+      <div className="settings-section">
         <h2>Keyboard Shortcuts</h2>
 
-        <div className='keyboard-shortcuts-table'>
-          <div className='shortcut-row'>
-            <div className='shortcut-label'>Play/Pause:</div>
-            <div className='shortcut-key'>
-              {settings.shortcuts?.playPause || 'Space'}
+        <div className="keyboard-shortcuts-table">
+          <div className="shortcut-row">
+            <div className="shortcut-label">Play/Pause:</div>
+            <div className="shortcut-key">
+              {settings.shortcuts?.playPause || "Space"}
             </div>
           </div>
 
-          <div className='shortcut-row'>
-            <div className='shortcut-label'>Seek Forward:</div>
-            <div className='shortcut-key'>
-              {settings.shortcuts?.seekForward || 'ArrowRight'}
+          <div className="shortcut-row">
+            <div className="shortcut-label">Seek Forward:</div>
+            <div className="shortcut-key">
+              {settings.shortcuts?.seekForward || "ArrowRight"}
             </div>
           </div>
 
-          <div className='shortcut-row'>
-            <div className='shortcut-label'>Seek Backward:</div>
-            <div className='shortcut-key'>
-              {settings.shortcuts?.seekBackward || 'ArrowLeft'}
+          <div className="shortcut-row">
+            <div className="shortcut-label">Seek Backward:</div>
+            <div className="shortcut-key">
+              {settings.shortcuts?.seekBackward || "ArrowLeft"}
             </div>
           </div>
 
-          <div className='shortcut-row'>
-            <div className='shortcut-label'>Volume Up:</div>
-            <div className='shortcut-key'>
-              {settings.shortcuts?.volumeUp || 'ArrowUp'}
+          <div className="shortcut-row">
+            <div className="shortcut-label">Volume Up:</div>
+            <div className="shortcut-key">
+              {settings.shortcuts?.volumeUp || "ArrowUp"}
             </div>
           </div>
 
-          <div className='shortcut-row'>
-            <div className='shortcut-label'>Volume Down:</div>
-            <div className='shortcut-key'>
-              {settings.shortcuts?.volumeDown || 'ArrowDown'}
+          <div className="shortcut-row">
+            <div className="shortcut-label">Volume Down:</div>
+            <div className="shortcut-key">
+              {settings.shortcuts?.volumeDown || "ArrowDown"}
             </div>
           </div>
 
-          <div className='shortcut-row'>
-            <div className='shortcut-label'>Toggle Fullscreen:</div>
-            <div className='shortcut-key'>
-              {settings.shortcuts?.toggleFullscreen || 'f'}
+          <div className="shortcut-row">
+            <div className="shortcut-label">Toggle Fullscreen:</div>
+            <div className="shortcut-key">
+              {settings.shortcuts?.toggleFullscreen || "f"}
             </div>
           </div>
         </div>
 
-        <p className='shortcut-info'>
+        <p className="shortcut-info">
           Note: Keyboard shortcuts cannot be customized at this time.
         </p>
       </div>
 
-      <div className='settings-section'>
-        <div className='settings-section-content'>
+      <div className="settings-section">
+        <div className="settings-section-content">
           <ElectronTest />
         </div>
       </div>
 
-      <div className='settings-actions'>
-        <button className='save-button' onClick={saveSettings}>
+      <div className="settings-actions">
+        <button className="save-button" onClick={saveSettings}>
           Save Settings
         </button>
-        <button className='reset-button' onClick={resetDefaults}>
+        <button className="reset-button" onClick={resetDefaults}>
           Reset to Defaults
         </button>
-        <button className='cancel-button' onClick={() => navigate(-1)}>
+        <button className="cancel-button" onClick={() => navigate(-1)}>
           Cancel
         </button>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Settings
+export default Settings;

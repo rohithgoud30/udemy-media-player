@@ -158,13 +158,13 @@ const ModernVideoPlayer = () => {
   const [isDraggingVolume, setIsDraggingVolume] = useState(false);
   const [isDraggingProgress, setIsDraggingProgress] = useState(false);
 
-  // Settings
+  // Settings - these are always true now
   const [playerSettings, setPlayerSettings] = useState({
     defaultSpeed: 1.0,
     autoPlay: true,
-    rememberPosition: true,
-    autoMarkCompleted: true,
-    autoPlayNext: true,
+    rememberPosition: true, // Always true
+    autoMarkCompleted: true, // Always true
+    autoPlayNext: true, // Always true
   });
 
   // Available playback speeds
@@ -185,18 +185,9 @@ const ModernVideoPlayer = () => {
               parsedSettings.playback.autoPlay !== undefined
                 ? parsedSettings.playback.autoPlay
                 : true,
-            rememberPosition:
-              parsedSettings.playback.rememberPosition !== undefined
-                ? parsedSettings.playback.rememberPosition
-                : true,
-            autoMarkCompleted:
-              parsedSettings.playback.autoMarkCompleted !== undefined
-                ? parsedSettings.playback.autoMarkCompleted
-                : true,
-            autoPlayNext:
-              parsedSettings.playback.autoPlayNext !== undefined
-                ? parsedSettings.playback.autoPlayNext
-                : true,
+            rememberPosition: true, // Always true
+            autoMarkCompleted: true, // Always true
+            autoPlayNext: true, // Always true
           });
         }
       }
@@ -612,14 +603,24 @@ const ModernVideoPlayer = () => {
       setPlaybackRate(rate);
       videoRef.current.playbackRate = rate;
 
-      // Save setting
-      setPlayerSettings((prev) => ({ ...prev, defaultSpeed: rate }));
+      // Save setting and ensure critical settings are always true
+      setPlayerSettings((prev) => ({
+        ...prev,
+        defaultSpeed: rate,
+        rememberPosition: true, // Always true
+        autoMarkCompleted: true, // Always true
+        autoPlayNext: true, // Always true
+      }));
       try {
         const settings = JSON.parse(
           localStorage.getItem("udemyPlayerSettings") || "{}"
         );
         settings.playback = settings.playback || {};
         settings.playback.defaultSpeed = rate;
+        // Force these to always be true
+        settings.playback.rememberPosition = true;
+        settings.playback.autoMarkCompleted = true;
+        settings.playback.autoPlayNext = true;
         localStorage.setItem("udemyPlayerSettings", JSON.stringify(settings));
       } catch (err) {
         console.error("Error saving playback speed:", err);
@@ -928,12 +929,7 @@ const ModernVideoPlayer = () => {
         className={`mini-lecture-item ${isActive ? "active" : ""} ${
           isCompleted ? "completed" : ""
         }`}
-        onClick={() => {
-          console.log(
-            `🎯 Clicking on lecture ${miniLecture.id}, current lectureId: ${lectureId}`
-          );
-          navigate(`/watch/${miniLecture.id}`);
-        }}
+        onClick={() => navigate(`/watch/${miniLecture.id}`)}
       >
         <div className="mini-lecture-status">
           {isActive ? "▶" : isCompleted ? "✓" : "○"}
