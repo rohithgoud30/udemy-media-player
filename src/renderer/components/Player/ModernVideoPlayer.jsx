@@ -147,6 +147,7 @@ const ModernVideoPlayer = () => {
   const [playbackRate, setPlaybackRate] = useState(1);
   const [subtitlesEnabled, setSubtitlesEnabled] = useState(false);
   const [isDraggingVolume, setIsDraggingVolume] = useState(false);
+  const [isDraggingProgress, setIsDraggingProgress] = useState(false);
 
   // Settings
   const [playerSettings, setPlayerSettings] = useState({
@@ -459,14 +460,42 @@ const ModernVideoPlayer = () => {
   const handlePlay = () => setIsPlaying(true);
   const handlePause = () => setIsPlaying(false);
 
-  const handleSeek = (e) => {
-    if (videoRef.current && progressBarRef.current) {
+  // Progress control helper function
+  const updateProgress = (e) => {
+    if (videoRef.current && progressBarRef.current && duration > 0) {
       const rect = progressBarRef.current.getBoundingClientRect();
-      const pos = (e.clientX - rect.left) / rect.width;
+      const pos = Math.max(
+        0,
+        Math.min(1, (e.clientX - rect.left) / rect.width)
+      );
       const newTime = pos * duration;
       videoRef.current.currentTime = newTime;
       setCurrentTime(newTime);
     }
+  };
+
+  // Progress bar click handler
+  const handleProgressClick = (e) => {
+    updateProgress(e);
+  };
+
+  // Progress bar mouse down (start dragging)
+  const handleProgressMouseDown = (e) => {
+    setIsDraggingProgress(true);
+    updateProgress(e);
+    e.preventDefault();
+  };
+
+  // Progress bar mouse move (dragging)
+  const handleProgressMouseMove = (e) => {
+    if (isDraggingProgress) {
+      updateProgress(e);
+    }
+  };
+
+  // Progress bar mouse up (stop dragging)
+  const handleProgressMouseUp = () => {
+    setIsDraggingProgress(false);
   };
 
   // Volume control helper function
@@ -818,6 +847,31 @@ const ModernVideoPlayer = () => {
     };
   }, [isDraggingVolume]);
 
+  // Handle progress dragging globally
+  useEffect(() => {
+    const handleGlobalMouseMove = (e) => {
+      if (isDraggingProgress) {
+        handleProgressMouseMove(e);
+      }
+    };
+
+    const handleGlobalMouseUp = () => {
+      if (isDraggingProgress) {
+        handleProgressMouseUp();
+      }
+    };
+
+    if (isDraggingProgress) {
+      document.addEventListener("mousemove", handleGlobalMouseMove);
+      document.addEventListener("mouseup", handleGlobalMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener("mousemove", handleGlobalMouseMove);
+      document.removeEventListener("mouseup", handleGlobalMouseUp);
+    };
+  }, [isDraggingProgress]);
+
   // Render mini lecture item
   const renderMiniLectureItem = (miniLecture) => {
     const isActive = miniLecture.id === parseInt(lectureId);
@@ -899,12 +953,21 @@ const ModernVideoPlayer = () => {
           <div className="progress-container">
             <div
               ref={progressBarRef}
-              className="progress-bar"
-              onClick={handleSeek}
+              className={`progress-bar ${isDraggingProgress ? "dragging" : ""}`}
+              onClick={handleProgressClick}
+              onMouseDown={handleProgressMouseDown}
+              style={{ cursor: isDraggingProgress ? "grabbing" : "pointer" }}
             >
               <div
                 className="progress-filled"
                 style={{ width: `${(currentTime / duration) * 100}%` }}
+              />
+              <div
+                className="progress-thumb"
+                style={{
+                  left: `${(currentTime / duration) * 100}%`,
+                  opacity: isDraggingProgress ? 1 : 0,
+                }}
               />
             </div>
           </div>
