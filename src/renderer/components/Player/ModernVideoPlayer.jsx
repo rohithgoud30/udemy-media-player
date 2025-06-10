@@ -160,6 +160,7 @@ const ModernVideoPlayer = () => {
   const [subtitlesEnabled, setSubtitlesEnabled] = useState(false);
   const [isDraggingVolume, setIsDraggingVolume] = useState(false);
   const [isDraggingProgress, setIsDraggingProgress] = useState(false);
+  const [notification, setNotification] = useState(null);
 
   // Settings - these are always true now
   const [playerSettings, setPlayerSettings] = useState({
@@ -182,6 +183,12 @@ const ModernVideoPlayer = () => {
   const playbackRates = [
     0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75, 4,
   ];
+
+  // Helper to show notifications
+  const showNotification = (message, type = "info", duration = 5000) => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), duration);
+  };
 
   // Load player settings and subtitle settings
   useEffect(() => {
@@ -343,14 +350,24 @@ const ModernVideoPlayer = () => {
         const targetLecture = allLectures[targetIndex];
         console.log(`Navigating to ${direction} lecture:`, targetLecture.title);
 
+        // Always maintain fullscreen if currently in fullscreen - no user action needed
+        const wasInFullscreen = !!document.fullscreenElement;
+
         setLoading(true);
-        navigate(`/watch/${targetLecture.id}`);
+
+        // Navigate to new lecture - always maintain fullscreen if active
+        navigate(`/watch/${targetLecture.id}`, {
+          state: {
+            ...routeState,
+            maintainFullscreen: wasInFullscreen,
+          },
+        });
       } catch (error) {
         console.error("Error navigating to lecture:", error);
         setLoading(false);
       }
     },
-    [lecture, course, navigate]
+    [lecture, course, navigate, routeState]
   );
 
   // Load lecture data
@@ -362,6 +379,36 @@ const ModernVideoPlayer = () => {
         setError("");
 
         console.log(`🎬 Loading lecture data for ID: ${lectureId}`);
+
+        // Early fullscreen request to prevent interruption during video loading
+        if (
+          routeState.maintainFullscreen &&
+          containerRef.current &&
+          !document.fullscreenElement
+        ) {
+          console.log(
+            "🔍 Pre-emptively entering fullscreen before video loads"
+          );
+          try {
+            await containerRef.current.requestFullscreen();
+            console.log("✅ Successfully entered fullscreen");
+          } catch (error) {
+            console.warn("⚠️ Could not enter fullscreen:", error);
+            showNotification(
+              "Could not maintain fullscreen mode. Use F or fullscreen button to re-enable.",
+              "warning",
+              8000
+            );
+            // Update route state to reflect we couldn't maintain fullscreen
+            navigate(location.pathname, {
+              state: {
+                ...routeState,
+                maintainFullscreen: false,
+              },
+              replace: true,
+            });
+          }
+        }
 
         // Reset video state when switching lectures
         setCurrentTime(0);
@@ -975,10 +1022,44 @@ const ModernVideoPlayer = () => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [navigateToLecture]);
 
-  // Fullscreen change detection
+  // Fullscreen change detection with improved persistence
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      const isCurrentlyFullscreen = !!document.fullscreenElement;
+      setIsFullscreen(isCurrentlyFullscreen);
+
+      // If fullscreen was unexpectedly exited while we want to maintain it,
+      // log this but don't try to auto-restore (browser security prevents it)
+      if (
+        !isCurrentlyFullscreen &&
+        routeState.maintainFullscreen &&
+        containerRef.current
+      ) {
+        console.log("⚠️ Fullscreen unexpectedly exited during navigation");
+        console.log(
+          "💡 User will need to manually re-enable fullscreen if desired"
+        );
+
+        // Show notification to inform user
+        showNotification(
+          "Fullscreen exited. Press F or click fullscreen button to re-enable.",
+          "info",
+          6000
+        );
+        setShowControls(true);
+
+        // Clear the maintainFullscreen flag since we can't auto-restore
+        // The user can manually toggle fullscreen again if they want
+        setTimeout(() => {
+          navigate(location.pathname, {
+            state: {
+              ...routeState,
+              maintainFullscreen: false,
+            },
+            replace: true,
+          });
+        }, 100);
+      }
     };
 
     document.addEventListener("fullscreenchange", handleFullscreenChange);
@@ -1001,7 +1082,7 @@ const ModernVideoPlayer = () => {
         handleFullscreenChange
       );
     };
-  }, []);
+  }, [routeState.maintainFullscreen, navigate, location.pathname]);
 
   // Auto-hide controls
   useEffect(() => {
@@ -1011,25 +1092,44 @@ const ModernVideoPlayer = () => {
       setShowControls(true);
       clearTimeout(hideTimeout);
       hideTimeout = setTimeout(() => {
-        if (isPlaying && !isFullscreen) {
+        if (isPlaying) {
           setShowControls(false);
         }
-      }, 3000);
+      }, 30000); // Hide after 30 seconds of no mouse activity
     };
 
     const handleMouseMove = () => showControlsTemp();
+    const handleMouseEnter = () => showControlsTemp();
+    const handleMouseLeave = () => {
+      // Don't auto-hide on mouse leave, only on timeout
+      if (!isPlaying) {
+        setShowControls(true); // Keep controls visible if video is paused
+      }
+    };
 
-    if (videoRef.current) {
-      videoRef.current.addEventListener("mousemove", handleMouseMove);
+    if (containerRef.current) {
+      const container = containerRef.current;
+      container.addEventListener("mousemove", handleMouseMove);
+      container.addEventListener("mouseenter", handleMouseEnter);
+      container.addEventListener("mouseleave", handleMouseLeave);
+    }
+
+    // Always show controls when video is paused
+    if (!isPlaying) {
+      setShowControls(true);
+      clearTimeout(hideTimeout);
     }
 
     return () => {
       clearTimeout(hideTimeout);
-      if (videoRef.current) {
-        videoRef.current.removeEventListener("mousemove", handleMouseMove);
+      if (containerRef.current) {
+        const container = containerRef.current;
+        container.removeEventListener("mousemove", handleMouseMove);
+        container.removeEventListener("mouseenter", handleMouseEnter);
+        container.removeEventListener("mouseleave", handleMouseLeave);
       }
     };
-  }, [isPlaying, isFullscreen]);
+  }, [isPlaying]);
 
   // Handle volume dragging globally
   useEffect(() => {
@@ -1086,13 +1186,25 @@ const ModernVideoPlayer = () => {
     const isActive = miniLecture.id === parseInt(lectureId);
     const isCompleted = miniLecture.completed;
 
+    const handleMiniLectureClick = () => {
+      // Always maintain fullscreen if currently in fullscreen
+      const wasInFullscreen = !!document.fullscreenElement;
+
+      navigate(`/watch/${miniLecture.id}`, {
+        state: {
+          ...routeState,
+          maintainFullscreen: wasInFullscreen,
+        },
+      });
+    };
+
     return (
       <div
         key={miniLecture.id}
         className={`mini-lecture-item ${isActive ? "active" : ""} ${
           isCompleted ? "completed" : ""
         }`}
-        onClick={() => navigate(`/watch/${miniLecture.id}`)}
+        onClick={handleMiniLectureClick}
       >
         <div className="mini-lecture-status">
           {isActive ? "▶" : isCompleted ? "✓" : "○"}
@@ -1115,6 +1227,35 @@ const ModernVideoPlayer = () => {
   };
 
   if (loading) {
+    // If we're maintaining fullscreen, show a minimal loading state
+    if (routeState.maintainFullscreen) {
+      return (
+        <div className="modern-video-player-container">
+          <div className="modern-video-container" ref={containerRef}>
+            <div
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                color: "white",
+                fontSize: "18px",
+                background: "rgba(0,0,0,0.8)",
+                padding: "16px 32px",
+                borderRadius: "12px",
+                textAlign: "center",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
+              }}
+            >
+              <div>Loading next video...</div>
+              <div style={{ fontSize: "14px", marginTop: "8px", opacity: 0.8 }}>
+                Staying in fullscreen
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
     return <div className="loading">Loading video...</div>;
   }
 
@@ -1466,6 +1607,13 @@ const ModernVideoPlayer = () => {
           </div>
         </div>
       </div>
+
+      {/* Notification */}
+      {notification && (
+        <div className={`notification notification-${notification.type}`}>
+          <div className="notification-content">{notification.message}</div>
+        </div>
+      )}
     </div>
   );
 };
