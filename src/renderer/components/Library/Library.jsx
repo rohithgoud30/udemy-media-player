@@ -17,10 +17,7 @@ const Library = ({ courses, loading, onDeleteCourse }) => {
           const progress = await ProgressManager.getCourseProgress(course.id);
           progressData[course.id] = progress;
         } catch (error) {
-          console.error(
-            `Failed to load progress for course ${course.id}:`,
-            error
-          );
+          console.error(`Failed to load progress for course ${course.id}:`, error);
         }
       }
 
@@ -34,9 +31,7 @@ const Library = ({ courses, loading, onDeleteCourse }) => {
 
   // Filter and sort courses
   const filteredCourses = courses
-    .filter((course) =>
-      course.title.toLowerCase().includes(filter.toLowerCase())
-    )
+    .filter((course) => course.title.toLowerCase().includes(filter.toLowerCase()))
     .sort((a, b) => {
       if (sortBy === "title") {
         return a.title.localeCompare(b.title);
@@ -97,15 +92,40 @@ const Library = ({ courses, loading, onDeleteCourse }) => {
   );
 };
 
-// Individual course card component
 const CourseCard = ({ course, progress, onDelete }) => {
   const progressPercentage = progress ? progress.completionPercentage : 0;
+
+  // Generate deterministic gradient based on course title
+  const getGradient = (name) => {
+    // 1. Generate a strong hash from the name
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+      hash = hash & hash; // Convert to 32bit integer
+    }
+
+    // 2. Generate two distinct colors using HSL
+    // Use the hash to pick a starting hue
+    const c1 = Math.abs(hash % 360);
+    // Be complementary or analogous - let's try a distinct shift
+    const c2 = (c1 + 40 + Math.abs((hash >> 8) % 60)) % 360;
+
+    // Keep saturation high (60-80%) and lightness balanced (50-65%) for vibrant look
+    // Using distinct values for the second color to ensure gradient visibility
+    const s1 = 70 + Math.abs((hash >> 4) % 20); // 70-90%
+    const l1 = 50 + Math.abs((hash >> 16) % 15); // 50-65%
+
+    const s2 = 80 + Math.abs((hash >> 12) % 20); // 80-100%
+    const l2 = 55 + Math.abs((hash >> 20) % 15); // 55-70%
+
+    return `linear-gradient(135deg, hsl(${c1}, ${s1}%, ${l1}%) 0%, hsl(${c2}, ${s2}%, ${l2}%) 100%)`;
+  };
 
   return (
     <div className="course-card">
       <div className="course-thumbnail">
         {/* We'll use the first letter of the course as a placeholder */}
-        <div className="thumbnail-placeholder">
+        <div className="thumbnail-placeholder" style={{ background: getGradient(course.title) }}>
           {course.title.charAt(0).toUpperCase()}
         </div>
       </div>
@@ -120,10 +140,7 @@ const CourseCard = ({ course, progress, onDelete }) => {
         </div>
 
         <div className="progress-bar">
-          <div
-            className="progress-fill"
-            style={{ width: `${progressPercentage}%` }}
-          ></div>
+          <div className="progress-fill" style={{ width: `${progressPercentage}%` }}></div>
         </div>
         <div className="progress-text">{progressPercentage}% Complete</div>
 

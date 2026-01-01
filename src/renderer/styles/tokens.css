@@ -15,17 +15,18 @@
   --primary-800: #1e293b;
   --primary-900: #0f172a;
 
-  /* Accent - Subtle Blue */
-  --accent-400: #60a5fa;
-  --accent-500: #3b82f6;
-  --accent-600: #2563eb;
+  /* Accent - Purple (Restored) */
+  --accent-400: #a78bfa;
+  --accent-500: #8b5ff8;
+  --accent-600: #7c3aed;
+  --accent-glow: rgba(139, 95, 248, 0.5);
 
-  /* Backgrounds - Solid Neutrals */
-  --bg-base: #09090b; /* Very dark, almost black */
-  --bg-surface: #18181b; /* Slightly lighter */
-  --bg-elevated: #27272a; /* Card background */
-  --bg-card: #27272a; /* Same as elevated for consistency */
-  --bg-hover: #3f3f46; /* Lighter for hover states */
+  /* Backgrounds - Space Theme (Restored) */
+  --bg-base: #0f0f1a; /* Deep Space */
+  --bg-surface: #1a1a2e; /* Space Blue */
+  --bg-elevated: #252549; /* Card BG */
+  --bg-card: #252549;
+  --bg-hover: #2d2d5c;
 
   /* Glass/Transparency - REMOVED/MINIMIZED */
   --glass-bg: #18181b; /* Solid fallback */
@@ -34,14 +35,14 @@
 
   /* Text Colors */
   --text-primary: #f4f4f5;
-  --text-secondary: #a1a1aa;
-  --text-muted: #52525b;
+  --text-secondary: #b8b9d4;
+  --text-muted: #8788a0;
   --text-accent: var(--accent-500);
 
   /* Border Colors */
-  --border-subtle: #27272a;
-  --border-default: #3f3f46;
-  --border-strong: #52525b;
+  --border-subtle: #2a2a4c;
+  --border-default: #3a3a5c;
+  --border-strong: #4a4a6c;
 
   /* Status Colors */
   --success: #22c55e;

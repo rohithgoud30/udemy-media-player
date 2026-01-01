@@ -72,7 +72,7 @@
 
 .control-btn:hover {
   background-color: rgba(255, 255, 255, 0.2);
-  color: var(--primary-300);
+  color: var(--accent-400);
 }
 
 .control-btn.active {
@@ -106,7 +106,7 @@
 
 .speed-select:focus {
   outline: none;
-  border-color: var(--primary-400);
+  border-color: var(--accent-400);
 }
 
 /* Player Content Below Video */
@@ -237,7 +237,7 @@
 }
 
 .mini-lecture-item.active {
-  background-color: var(--primary-600);
+  background-color: var(--accent-600);
   color: white;
 }
 
@@ -252,7 +252,8 @@
   animation: slideIn 0.3s ease;
   z-index: 100;
   background-color: var(--bg-elevated);
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--accent-500);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 0 10px rgba(139, 95, 248, 0.3);
 }
 
 .notification-success {
@@ -262,7 +263,7 @@
 }
 
 .notification-info {
-  background-color: var(--primary-700);
+  background-color: var(--accent-600);
   color: white;
 }
 
@@ -305,7 +306,7 @@
 
 .progress-filled {
   height: 100%;
-  background-color: var(--primary-500);
+  background-color: var(--accent-500);
   border-radius: var(--radius-full);
   position: relative;
 }
