@@ -205,6 +205,8 @@
 .control-btn:hover {
   background: rgba(255, 255, 255, 0.25);
   border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+  transform: translateY(-2px);
 }
 
 .control-btn:active {
@@ -349,7 +351,7 @@
   font-weight: 600;
   min-width: 120px;
   text-align: center;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", monospace;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace;
   background: rgba(0, 0, 0, 0.4);
   padding: 6px 12px;
   border-radius: 6px;
@@ -547,7 +549,7 @@
 }
 
 .video-info-section::before {
-  content: "";
+  content: '';
   position: absolute;
   top: 0;
   left: 0;
@@ -599,7 +601,7 @@
 }
 
 .completion-status::before {
-  content: "";
+  content: '';
   position: absolute;
   top: 0;
   left: 0;
@@ -665,7 +667,7 @@
 
 .mark-complete-button::before,
 .reset-position-button::before {
-  content: "";
+  content: '';
   position: absolute;
   top: 0;
   left: -100%;
@@ -1369,7 +1371,7 @@
   background-color: var(--subtitle-background-color, rgba(0, 0, 0, 0.85));
   color: var(--subtitle-font-color, white);
   font-size: var(--subtitle-font-size, 1.1rem);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Inter",
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Inter',
     Arial, sans-serif;
   font-weight: 500;
   text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.9);
