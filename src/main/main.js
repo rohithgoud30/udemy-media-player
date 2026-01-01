@@ -64,6 +64,7 @@ function createWindow() {
     height: 800,
     minWidth: 800,
     minHeight: 600,
+    icon: path.join(__dirname, "../../build/icon.png"),
     webPreferences: {
       preload: path.join(__dirname, isDev ? "preload.js" : "preload.js"), // We'll use the JS version that gets compiled from TS
       nodeIntegration: false,
@@ -82,8 +83,7 @@ function createWindow() {
   // Load the app
   if (isDev) {
     // In development, load from Vite dev server
-    const serverUrl =
-      process.env.VITE_DEV_SERVER_URL || "http://localhost:5173";
+    const serverUrl = process.env.VITE_DEV_SERVER_URL || "http://localhost:5173";
     console.log(`Loading from dev server: ${serverUrl}`);
     mainWindow.loadURL(serverUrl);
     mainWindow.webContents.openDevTools();
@@ -242,9 +242,7 @@ function registerVideoProtocol() {
   protocol.registerStreamProtocol("localvideo", async (request, callback) => {
     try {
       // Extract the file path from the URL
-      const filePath = decodeURIComponent(
-        request.url.replace("localvideo://", "")
-      );
+      const filePath = decodeURIComponent(request.url.replace("localvideo://", ""));
       console.log("Custom protocol request for:", filePath);
 
       // Check if file exists
