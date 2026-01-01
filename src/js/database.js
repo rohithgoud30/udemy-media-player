@@ -9,8 +9,7 @@ class UdemyMediaPlayerDB extends Dexie {
     this.version(1).stores({
       courses: "++id, title, path, dateAdded",
       sections: "++id, courseId, title, index",
-      lectures:
-        "++id, sectionId, courseId, title, filePath, subtitlePath, duration, index",
+      lectures: "++id, sectionId, courseId, title, filePath, subtitlePath, duration, index",
       progress: "lectureId, watched, position, lastWatched",
     });
   }
@@ -76,16 +75,10 @@ export const CourseManager = {
     const course = await db.courses.get(courseId);
     if (!course) return null;
 
-    const sections = await db.sections
-      .where("courseId")
-      .equals(courseId)
-      .sortBy("index");
+    const sections = await db.sections.where("courseId").equals(courseId).sortBy("index");
 
     for (const section of sections) {
-      section.lectures = await db.lectures
-        .where("sectionId")
-        .equals(section.id)
-        .sortBy("index");
+      section.lectures = await db.lectures.where("sectionId").equals(section.id).sortBy("index");
     }
 
     course.sections = sections;
@@ -131,17 +124,13 @@ export const CourseManager = {
       for (const lecture of section.lectures) {
         // Duration is stored in seconds
         const lectureDuration = lecture.duration || 0;
-        console.log(
-          `Lecture: ${lecture.title}, Duration: ${lectureDuration} seconds`
-        );
+        console.log(`Lecture: ${lecture.title}, Duration: ${lectureDuration} seconds`);
         sectionDuration += lectureDuration;
         totalDuration += lectureDuration;
       }
 
       sectionDurations[section.id] = sectionDuration;
-      console.log(
-        `Section: ${section.title}, Total Duration: ${sectionDuration} seconds`
-      );
+      console.log(`Section: ${section.title}, Total Duration: ${sectionDuration} seconds`);
     }
 
     console.log(`Course Total Duration: ${totalDuration} seconds`);
@@ -194,7 +183,7 @@ export const CourseManager = {
               resolve(0);
             }, 5000);
 
-            // Use file URL
+            // Use file URL (webSecurity is disabled in dev mode)
             const normalizedPath = filePath.replace(/\\/g, "/");
             const fileUrl = `file://${normalizedPath
               .split("/")
@@ -217,18 +206,14 @@ export const CourseManager = {
             const duration = await getVideoDuration(lecture.filePath);
             if (duration > 0) {
               await db.lectures.update(lecture.id, { duration });
-              console.log(
-                `Updated duration for ${lecture.title}: ${duration} seconds`
-              );
+              console.log(`Updated duration for ${lecture.title}: ${duration} seconds`);
               updated++;
             }
           }
         }
       }
 
-      console.log(
-        `Updated ${updated} lecture durations for course ${course.title}`
-      );
+      console.log(`Updated ${updated} lecture durations for course ${course.title}`);
       return updated > 0;
     } catch (error) {
       console.error("Error updating lecture durations:", error);
@@ -277,18 +262,12 @@ export const ProgressManager = {
   // Get all watched lectures for a course
   async getCourseProgress(courseId) {
     // Get all lecture IDs for this course
-    const lectures = await db.lectures
-      .where("courseId")
-      .equals(courseId)
-      .toArray();
+    const lectures = await db.lectures.where("courseId").equals(courseId).toArray();
 
     const lectureIds = lectures.map((l) => l.id);
 
     // Get progress for all lectures
-    const progress = await db.progress
-      .where("lectureId")
-      .anyOf(lectureIds)
-      .toArray();
+    const progress = await db.progress.where("lectureId").anyOf(lectureIds).toArray();
 
     // Calculate course completion percentage
     const totalLectures = lectures.length;
@@ -300,9 +279,7 @@ export const ProgressManager = {
       watchedLectures,
       partialLectures,
       completionPercentage: totalLectures
-        ? Math.round(
-            ((watchedLectures + partialLectures * 0.5) / totalLectures) * 100
-          )
+        ? Math.round(((watchedLectures + partialLectures * 0.5) / totalLectures) * 100)
         : 0,
     };
   },

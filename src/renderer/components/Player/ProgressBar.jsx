@@ -82,7 +82,7 @@ const ProgressBar = ({ currentTime, duration, onSeek, onSeekStart, onSeekEnd, bu
     <div className="progress-container">
       <div
         ref={progressBarRef}
-        className={`progress-bar ${isDragging ? "dragging" : ""}`}
+        className={`video-progress-bar ${isDragging ? "dragging" : ""}`}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}

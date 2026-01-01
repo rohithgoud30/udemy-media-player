@@ -66,6 +66,7 @@
     "mime-types": "^3.0.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-player": "^3.4.0",
     "react-router-dom": "^7.6.1"
   },
   "devDependencies": {

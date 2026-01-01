@@ -179,7 +179,7 @@ const ModernVideoPlayer = () => {
         // Override paths if provided in route state
         if (routeState.filePath) lectureData.filePath = routeState.filePath;
 
-        // Video URL
+        // Video URL - use file:// protocol (webSecurity is disabled in dev mode)
         const createVideoUrl = (filePath) => {
           if (!filePath) return null;
           try {

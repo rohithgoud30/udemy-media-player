@@ -301,6 +301,8 @@ app.whenReady().then(() => {
 
   // Register a dedicated media protocol that works better with HTML5 video
   protocol.registerStreamProtocol("media", async (request, callback) => {
+    console.log(">>> MEDIA PROTOCOL REQUEST RECEIVED:", request.url);
+    console.log(">>> Request headers:", request.headers);
     try {
       // Extract the file path from the URL
       // media://video/?path=/path/to/file.mp4
@@ -322,28 +324,63 @@ app.whenReady().then(() => {
 
       // Get file stats for content length
       const stats = await stat(filePath);
+      const fileSize = stats.size;
 
       // Determine content type based on file extension
-      const extension = path.extname(filePath).toLowerCase().substring(1);
-      const mimeType = mime.lookup(filePath) || "video/mp4";
-
-      // Create a read stream from the file
-      const fileStream = fs.createReadStream(filePath);
-
-      // Setup response headers
-      const headers = {
-        "Content-Type": mimeType,
-        "Content-Length": stats.size.toString(),
-        "Accept-Ranges": "bytes",
-        "Cache-Control": "no-cache",
+      // Force correct video MIME types (mime-types package sometimes returns application/*)
+      const ext = path.extname(filePath).toLowerCase();
+      const videoMimeTypes = {
+        ".mp4": "video/mp4",
+        ".webm": "video/webm",
+        ".mkv": "video/x-matroska",
+        ".avi": "video/x-msvideo",
+        ".mov": "video/quicktime",
+        ".m4v": "video/mp4",
       };
+      const mimeType = videoMimeTypes[ext] || mime.lookup(filePath) || "video/mp4";
+      console.log("Serving file with MIME type:", mimeType, "Size:", fileSize);
 
-      // Send the response
-      callback({
-        statusCode: 200,
-        headers: headers,
-        data: fileStream,
-      });
+      // Handle Range requests (for seeking and partial content)
+      const rangeHeader = request.headers.Range || request.headers.range;
+
+      if (rangeHeader) {
+        // Parse the range header
+        const parts = rangeHeader.replace(/bytes=/, "").split("-");
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+        const chunkSize = end - start + 1;
+
+        console.log(`Range request: ${start}-${end}/${fileSize} (chunk: ${chunkSize})`);
+
+        const fileStream = fs.createReadStream(filePath, { start, end });
+
+        callback({
+          statusCode: 206,
+          headers: {
+            "Content-Type": mimeType,
+            "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+            "Accept-Ranges": "bytes",
+            "Content-Length": chunkSize.toString(),
+            "Cache-Control": "no-cache",
+          },
+          data: fileStream,
+        });
+      } else {
+        // Regular request - send the whole file
+        console.log("Full file request, size:", fileSize);
+        const fileStream = fs.createReadStream(filePath);
+
+        callback({
+          statusCode: 200,
+          headers: {
+            "Content-Type": mimeType,
+            "Content-Length": fileSize.toString(),
+            "Accept-Ranges": "bytes",
+            "Cache-Control": "no-cache",
+          },
+          data: fileStream,
+        });
+      }
     } catch (error) {
       console.error("Error handling media protocol request:", error);
       callback({

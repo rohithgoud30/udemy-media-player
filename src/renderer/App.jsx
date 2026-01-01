@@ -1,11 +1,6 @@
 import React, { useState, useEffect } from "react";
-import {
-  HashRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
-import "./index.css";
+import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import "./styles/global.css";
 
 // Components
 import Navbar from "./components/Navbar";
@@ -46,9 +41,7 @@ function App() {
         setCourses(courseData);
       } catch (err) {
         console.error("Failed to load courses:", err);
-        setError(
-          "Failed to load your course library. Please try restarting the app."
-        );
+        setError("Failed to load your course library. Please try restarting the app.");
       } finally {
         setLoading(false);
       }
@@ -90,11 +83,7 @@ function App() {
             <Route
               path="/"
               element={
-                <Library
-                  courses={courses}
-                  loading={loading}
-                  onDeleteCourse={handleCourseDelete}
-                />
+                <Library courses={courses} loading={loading} onDeleteCourse={handleCourseDelete} />
               }
             />
 
