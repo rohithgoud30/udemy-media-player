@@ -13,6 +13,7 @@ const DEFAULT_SETTINGS = {
     rememberPosition: true, // Always true by default
     autoMarkCompleted: true, // Always true by default
     autoPlayNext: true, // Always true by default
+    showCompletionOverlay: true, // Show modal on lecture complete
   },
 
   // Keyboard shortcuts
@@ -49,11 +50,11 @@ const Settings = () => {
             ...parsed,
             // Ensure nested objects are properly merged
             playback: {
-              ...DEFAULT_SETTINGS.playback,
+              ...parsed.playbackck,
               ...(parsed.playback || {}),
             },
             shortcuts: {
-              ...DEFAULT_SETTINGS.shortcuts,
+              ...parsed.shortcutsts,
               ...(parsed.shortcuts || {}),
             },
           });
@@ -106,10 +107,7 @@ const Settings = () => {
       };
 
       // Save to localStorage
-      localStorage.setItem(
-        "udemyPlayerSettings",
-        JSON.stringify(settingsToSave)
-      );
+      localStorage.setItem("udemyPlayerSettings", JSON.stringify(settingsToSave));
 
       // If using Electron, also save to a file
       if (window.electronAPI) {
@@ -149,10 +147,7 @@ const Settings = () => {
             },
           };
 
-          localStorage.setItem(
-            "udemyPlayerSettings",
-            JSON.stringify(updatedSettings)
-          );
+          localStorage.setItem("udemyPlayerSettings", JSON.stringify(updatedSettings));
           console.log(`💾 Auto-saved playback speed: ${value}x`);
         } catch (error) {
           console.error("Error auto-saving playback speed:", error);
@@ -163,9 +158,7 @@ const Settings = () => {
 
   // Reset to defaults
   const resetDefaults = () => {
-    if (
-      window.confirm("Are you sure you want to reset all settings to defaults?")
-    ) {
+    if (window.confirm("Are you sure you want to reset all settings to defaults?")) {
       localStorage.removeItem("udemyPlayerSettings");
       setSettings(DEFAULT_SETTINGS);
     }
@@ -188,11 +181,7 @@ const Settings = () => {
             id="defaultSpeed"
             value={settings.playback?.defaultSpeed || 1.0}
             onChange={(e) =>
-              handleInputChange(
-                "playback",
-                "defaultSpeed",
-                parseFloat(e.target.value)
-              )
+              handleInputChange("playback", "defaultSpeed", parseFloat(e.target.value))
             }
           >
             <option value={0.5}>0.5x</option>
@@ -218,12 +207,27 @@ const Settings = () => {
             <input
               type="checkbox"
               checked={settings.playback?.autoPlay || false}
-              onChange={(e) =>
-                handleInputChange("playback", "autoPlay", e.target.checked)
-              }
+              onChange={(e) => handleInputChange("playback", "autoPlay", e.target.checked)}
             />
             Auto-play videos when opening
           </label>
+        </div>
+
+        <div className="setting-item">
+          <label>
+            <input
+              type="checkbox"
+              checked={settings.playback?.showCompletionOverlay !== false}
+              onChange={(e) =>
+                handleInputChange("playback", "showCompletionOverlay", e.target.checked)
+              }
+            />
+            Show completion overlay when lecture ends
+          </label>
+          <p className="setting-description">
+            When enabled, a modal with replay and next lecture options will appear when a video
+            completes.
+          </p>
         </div>
       </div>
 
@@ -262,9 +266,7 @@ const Settings = () => {
           </div>
         </div>
 
-        <p className="shortcut-info">
-          Note: Keyboard shortcuts cannot be customized at this time.
-        </p>
+        <p className="shortcut-info">Note: Keyboard shortcuts cannot be customized at this time.</p>
       </div>
 
       <div className="settings-section">

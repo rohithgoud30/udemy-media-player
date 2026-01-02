@@ -37,6 +37,7 @@ const ModernVideoPlayer = () => {
   const [nearbyLectures, setNearbyLectures] = useState([]);
   const [showControls, setShowControls] = useState(true);
   const [notification, setNotification] = useState(null);
+  const [showCompletionOverlay, setShowCompletionOverlay] = useState(false);
 
   // Use custom hooks
   const {
@@ -300,7 +301,13 @@ const ModernVideoPlayer = () => {
     if (duration > 0 && currentTime > duration * 0.98 && !lecture?.completed) {
       ProgressManager.saveProgress(lecture.id, 0, true);
       setLecture((prev) => ({ ...prev, completed: true }));
-      showNotification("Lecture Completed!", "success");
+      // Check user preference before showing toast
+      const playerSettings = SettingsManager.getPlayerSettings();
+      if (playerSettings.showCompletionOverlay) {
+        setShowCompletionOverlay(true);
+        // Auto-hide toast after 3 seconds
+        setTimeout(() => setShowCompletionOverlay(false), 3000);
+      }
     }
   }, [currentTime, duration, lecture]);
 
@@ -434,9 +441,12 @@ const ModernVideoPlayer = () => {
           onPrevLecture={() => navigateToLecture("prev")}
         />
 
-        {notification && (
-          <div className={`notification notification-${notification.type}`}>
-            {notification.message}
+        {notification && <div className="notification">{notification.message}</div>}
+
+        {showCompletionOverlay && (
+          <div className="completion-toast">
+            <span className="completion-toast-icon">✓</span>
+            Lecture Complete!
           </div>
         )}
       </div>

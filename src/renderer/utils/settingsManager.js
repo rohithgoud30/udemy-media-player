@@ -9,6 +9,7 @@ const DEFAULT_SETTINGS = {
     rememberPosition: true, // Always forced to true
     autoMarkCompleted: true, // Always forced to true
     autoPlayNext: true, // Always forced to true
+    showCompletionOverlay: true, // Show modal on lecture complete
   },
   shortcuts: {
     playPause: "Space",
@@ -53,11 +54,11 @@ class SettingsManager {
           ...DEFAULT_SETTINGS,
           ...parsed,
           playback: {
-            ...DEFAULT_SETTINGS.playback,
+            ...parsed.playbackck,
             ...(parsed.playback || {}),
           },
           shortcuts: {
-            ...DEFAULT_SETTINGS.shortcuts,
+            ...parsed.shortcutsts,
             ...(parsed.shortcuts || {}),
           },
         };
@@ -104,6 +105,7 @@ class SettingsManager {
       rememberPosition: true, // Always true
       autoMarkCompleted: true, // Always true
       autoPlayNext: true, // Always true
+      showCompletionOverlay: settings.playback.showCompletionOverlay !== false,
     };
   }
 

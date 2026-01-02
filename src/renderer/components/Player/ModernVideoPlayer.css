@@ -245,39 +245,83 @@
   color: white;
 }
 
-/* Notification Toast */
-.notification {
+/* Lecture Completion Toast - Simple green notification */
+.completion-toast {
   position: absolute;
-  top: var(--space-4);
-  right: var(--space-4);
-  padding: var(--space-3) var(--space-5);
-  border-radius: var(--radius-md);
-  font-weight: 500;
-  animation: slideIn 0.3s ease;
-  z-index: 100;
-  background-color: var(--bg-elevated);
-  border: 1px solid var(--accent-500);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 0 10px rgba(139, 95, 248, 0.3);
-}
-
-.notification-success {
-  background-color: var(--success-muted);
-  color: var(--success);
-  border-color: var(--success);
-}
-
-.notification-info {
-  background-color: var(--accent-600);
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #10b981, #059669);
   color: white;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-full);
+  font-weight: 500;
+  font-size: var(--text-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  z-index: 50;
+  animation: toastIn 0.4s ease, toastOut 0.4s ease 2.6s forwards;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
 }
 
-@keyframes slideIn {
+.completion-toast-icon {
+  width: 20px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+@keyframes toastIn {
   from {
-    transform: translateX(100%);
+    transform: translateX(-50%) translateY(20px);
     opacity: 0;
   }
   to {
-    transform: translateX(0);
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes toastOut {
+  from {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-50%) translateY(-20px);
+    opacity: 0;
+  }
+}
+
+/* Small toast for other notifications */
+.notification {
+  position: absolute;
+  top: var(--space-4);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  font-weight: 500;
+  font-size: var(--text-sm);
+  animation: slideDown 0.3s ease;
+  z-index: 100;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  backdrop-filter: blur(8px);
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateX(-50%) translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
     opacity: 1;
   }
 }
