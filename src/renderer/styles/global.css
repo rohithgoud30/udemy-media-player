@@ -197,7 +197,7 @@ a:hover {
 
 /* Course Card */
 .course-card {
-  background: var(--bg-card);
+  background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   overflow: hidden;
@@ -213,7 +213,7 @@ a:hover {
 
 .course-thumbnail {
   height: 160px;
-  background: var(--bg-elevated);
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
