@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import "./ModernVideoPlayer.css";
 import { CourseManager, ProgressManager } from "../../../js/database";
 import db from "../../../js/database";
+import SettingsManager from "../../utils/settingsManager";
 
 // Hooks
 import { useVideoPlayer } from "../../hooks/useVideoPlayer";
@@ -265,6 +266,17 @@ const ModernVideoPlayer = () => {
           videoRef.current.currentTime = lecture.savedProgress;
           hasRestoredPosition.current = true;
         }
+      }
+
+      // Auto-play if enabled in settings
+      const playerSettings = SettingsManager.getPlayerSettings();
+      if (playerSettings.autoPlay && videoRef.current) {
+        // Small delay to ensure position is restored first
+        setTimeout(() => {
+          videoRef.current?.play().catch((err) => {
+            console.warn("Auto-play was prevented:", err);
+          });
+        }, 100);
       }
     },
     [videoEvents, lecture],
