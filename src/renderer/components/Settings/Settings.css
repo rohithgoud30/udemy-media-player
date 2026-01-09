@@ -181,6 +181,51 @@
 
 /* Removed local CSS variables to use global tokens */
 
+/* Credits Section */
+.settings-credits {
+  text-align: center;
+  padding: var(--space-6);
+  margin-top: var(--space-4);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.settings-credits p {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+}
+
+.settings-credits .heart {
+  color: #e25555;
+  animation: heartbeat 1.5s ease-in-out infinite;
+  display: inline-block;
+}
+
+@keyframes heartbeat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+.settings-credits .credits-link {
+  color: var(--primary-500);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color var(--transition-fast);
+}
+
+.settings-credits .credits-link:hover {
+  color: var(--primary-400);
+  text-decoration: underline;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .settings-container {

@@ -275,6 +275,20 @@ const Settings = () => {
         </div>
       </div>
 
+      <div className="settings-credits">
+        <p>
+          Made with <span className="heart">❤️</span> by{" "}
+          <a
+            href="https://github.com/rohithgoud30"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="credits-link"
+          >
+            @rohithgoud30
+          </a>
+        </p>
+      </div>
+
       <div className="settings-actions">
         <button className="save-button" onClick={saveSettings}>
           Save Settings
