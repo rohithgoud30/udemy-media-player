@@ -6,7 +6,7 @@
  */
 
 // Import required modules
-const { app, BrowserWindow, dialog, ipcMain, protocol } = require("electron");
+const { app, BrowserWindow, dialog, ipcMain, protocol, shell } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const url = require("url");
@@ -97,6 +97,29 @@ function createWindow() {
   // Log when window is ready
   mainWindow.webContents.on("did-finish-load", () => {
     console.log("Window content loaded successfully");
+  });
+
+  // Handle external links - open in system browser
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    // Open external URLs in the default browser
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      shell.openExternal(url);
+      return { action: "deny" }; // Prevent Electron from opening it
+    }
+    return { action: "allow" };
+  });
+
+  // Also handle navigation to external URLs
+  mainWindow.webContents.on("will-navigate", (event, url) => {
+    // If navigating to an external URL, open in browser instead
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      // Check if it's not the dev server
+      const devServerUrl = process.env.VITE_DEV_SERVER_URL || "http://localhost:5173";
+      if (!url.startsWith(devServerUrl)) {
+        event.preventDefault();
+        shell.openExternal(url);
+      }
+    }
   });
 
   // Handle window being closed
