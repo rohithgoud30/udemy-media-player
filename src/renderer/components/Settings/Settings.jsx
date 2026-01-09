@@ -51,11 +51,11 @@ const Settings = () => {
             // Ensure nested objects are properly merged
             playback: {
               ...parsed.playbackck,
-              ...(parsed.playback || {}),
+              ...parsed.playback,
             },
             shortcuts: {
               ...parsed.shortcutsts,
-              ...(parsed.shortcuts || {}),
+              ...parsed.shortcuts,
             },
           });
 
@@ -70,11 +70,11 @@ const Settings = () => {
                 // Ensure nested objects are properly merged (same as above)
                 playback: {
                   ...DEFAULT_SETTINGS.playback,
-                  ...(electronSettings.playback || {}),
+                  ...electronSettings.playback,
                 },
                 shortcuts: {
                   ...DEFAULT_SETTINGS.shortcuts,
-                  ...(electronSettings.shortcuts || {}),
+                  ...electronSettings.shortcuts,
                 },
               });
             }
@@ -127,7 +127,7 @@ const Settings = () => {
     setSettings((prevSettings) => ({
       ...prevSettings,
       [section]: {
-        ...(prevSettings[section] || {}),
+        ...prevSettings[section],
         [setting]: value,
       },
     }));
@@ -275,6 +275,18 @@ const Settings = () => {
         </div>
       </div>
 
+      <div className="settings-actions">
+        <button className="save-button" onClick={saveSettings}>
+          Save Settings
+        </button>
+        <button className="reset-button" onClick={resetDefaults}>
+          Reset to Defaults
+        </button>
+        <button className="cancel-button" onClick={() => navigate(-1)}>
+          Cancel
+        </button>
+      </div>
+
       <div className="settings-credits">
         <p>
           Made with <span className="heart">❤️</span> by{" "}
@@ -287,18 +299,6 @@ const Settings = () => {
             @rohithgoud30
           </a>
         </p>
-      </div>
-
-      <div className="settings-actions">
-        <button className="save-button" onClick={saveSettings}>
-          Save Settings
-        </button>
-        <button className="reset-button" onClick={resetDefaults}>
-          Reset to Defaults
-        </button>
-        <button className="cancel-button" onClick={() => navigate(-1)}>
-          Cancel
-        </button>
       </div>
     </div>
   );
