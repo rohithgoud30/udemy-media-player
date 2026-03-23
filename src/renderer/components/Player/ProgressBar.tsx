@@ -1,13 +1,29 @@
 import React, { useRef, useState, useEffect } from "react";
 import "./ModernVideoPlayer.css"; // We'll share the CSS for now
 
-const ProgressBar = ({ currentTime, duration, onSeek, onSeekStart, onSeekEnd, buffered = 0 }) => {
-  const progressBarRef = useRef(null);
+interface ProgressBarProps {
+  currentTime: number;
+  duration: number;
+  onSeek: (time: number) => void;
+  onSeekStart?: () => void;
+  onSeekEnd?: () => void;
+  buffered?: number;
+}
+
+const ProgressBar: React.FC<ProgressBarProps> = ({
+  currentTime,
+  duration,
+  onSeek,
+  onSeekStart,
+  onSeekEnd,
+  buffered = 0,
+}) => {
+  const progressBarRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [hoverPosition, setHoverPosition] = useState(null);
+  const [hoverPosition, setHoverPosition] = useState<number | null>(null);
 
   // Helper to calculate percentage and time from mouse event
-  const calculatePosition = (e) => {
+  const calculatePosition = (e: MouseEvent | React.MouseEvent): { percentage: number; time: number } => {
     if (!progressBarRef.current || !duration) return { percentage: 0, time: 0 };
 
     const rect = progressBarRef.current.getBoundingClientRect();
@@ -18,14 +34,14 @@ const ProgressBar = ({ currentTime, duration, onSeek, onSeekStart, onSeekEnd, bu
     return { percentage, time };
   };
 
-  const handleMouseDown = (e) => {
+  const handleMouseDown = (e: React.MouseEvent): void => {
     setIsDragging(true);
     const { time } = calculatePosition(e);
     if (onSeekStart) onSeekStart();
     onSeek(time);
   };
 
-  const handleMouseMove = (e) => {
+  const handleMouseMove = (e: React.MouseEvent): void => {
     const { percentage } = calculatePosition(e);
     setHoverPosition(percentage);
 
@@ -35,11 +51,11 @@ const ProgressBar = ({ currentTime, duration, onSeek, onSeekStart, onSeekEnd, bu
     }
   };
 
-  const handleMouseLeave = () => {
+  const handleMouseLeave = (): void => {
     setHoverPosition(null);
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = (): void => {
     if (isDragging) {
       setIsDragging(false);
       if (onSeekEnd) onSeekEnd();
@@ -48,7 +64,7 @@ const ProgressBar = ({ currentTime, duration, onSeek, onSeekStart, onSeekEnd, bu
 
   // Global mouse up listeners to handle dragging outside component
   useEffect(() => {
-    const handleGlobalMouseUp = (e) => {
+    const handleGlobalMouseUp = (e: MouseEvent): void => {
       if (isDragging) {
         setIsDragging(false);
         const { time } = calculatePosition(e);
@@ -58,7 +74,7 @@ const ProgressBar = ({ currentTime, duration, onSeek, onSeekStart, onSeekEnd, bu
       }
     };
 
-    const handleGlobalMouseMove = (e) => {
+    const handleGlobalMouseMove = (e: MouseEvent): void => {
       if (isDragging) {
         const { time } = calculatePosition(e);
         onSeek(time);

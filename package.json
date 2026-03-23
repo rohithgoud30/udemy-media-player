@@ -1,21 +1,20 @@
 {
   "name": "udemy-media-player",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "main": "src/main/main.js",
   "scripts": {
     "dev:vite": "vite",
     "dev:electron": "cross-env NODE_ENV=development ELECTRON_DISABLE_SECURITY_WARNINGS=true electron .",
-    "dev": "concurrently -k \"npm run dev:vite\" \"wait-on http://localhost:5173 && npm run dev:electron\"",
-    "electron:test": "electron src/electron-test.js",
-    "build": "vite build && npm run build:preload",
+    "dev": "concurrently -k \"pnpm run dev:vite\" \"wait-on http://localhost:5173 && pnpm run dev:electron\"",
+    "build": "vite build && pnpm run build:preload",
     "build:preload": "tsc -p tsconfig.preload.json",
     "start": "electron .",
-    "package": "npm run build && electron-builder build --mac --win --linux",
-    "package:mac": "npm run build && electron-builder build --mac",
-    "package:win": "npm run build && electron-builder build --win",
-    "package:win:x64": "npm run build && electron-builder build --win --x64",
-    "package:win:arm64": "npm run build && electron-builder build --win --arm64",
-    "package:linux": "npm run build && electron-builder build --linux"
+    "package": "pnpm run build && electron-builder build --mac --win --linux",
+    "package:mac": "pnpm run build && electron-builder build --mac",
+    "package:win": "pnpm run build && electron-builder build --win",
+    "package:win:x64": "pnpm run build && electron-builder build --win --x64",
+    "package:win:arm64": "pnpm run build && electron-builder build --win --arm64",
+    "package:linux": "pnpm run build && electron-builder build --linux"
   },
   "keywords": [],
   "author": "",
@@ -70,11 +69,9 @@
     "mime-types": "^3.0.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-player": "^3.4.0",
     "react-router-dom": "^7.6.1"
   },
   "devDependencies": {
-    "@types/electron": "^1.6.10",
     "@types/node": "^20.11.30",
     "@types/react": "^18.2.72",
     "@types/react-dom": "^18.2.22",
@@ -83,7 +80,6 @@
     "cross-env": "^7.0.3",
     "electron": "^39.2.7",
     "electron-builder": "^26.0.12",
-    "electron-squirrel-startup": "^1.0.1",
     "typescript": "^5.4.5",
     "vite": "^6.3.5",
     "wait-on": "^8.0.3"

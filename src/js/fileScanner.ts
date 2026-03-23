@@ -6,24 +6,19 @@
  * Identifies videos and subtitles, organizes them by section/lecture
  */
 export default class FileScanner {
+  private electronAPI: ElectronAPI;
+
   constructor() {
     // Make sure we're in Electron with the proper API
     this.electronAPI = window.electronAPI;
-    if (!this.electronAPI) {
-      console.error("Electron API not available - file scanning will not work");
-      console.log(
-        "Available window properties:",
-        Object.keys(window).filter((key) => key.includes("electron")),
-      );
-    }
   }
 
   /**
    * Scan a course directory
-   * @param {string} dirPath Path to the course directory
-   * @returns {Promise<Object>} Course object with sections and lectures
+   * @param dirPath Path to the course directory
+   * @returns Course object with sections and lectures
    */
-  async scanCourseDirectory(dirPath) {
+  async scanCourseDirectory(dirPath: string): Promise<Course> {
     if (!this.electronAPI) {
       throw new Error("Electron API not available");
     }
@@ -31,7 +26,7 @@ export default class FileScanner {
     try {
       // Invoke the main process to scan the directory
       // This is implemented in the preload.js/main.js
-      const result = await this.electronAPI.invoke("scan-directory", dirPath);
+      const result = await this.electronAPI.invoke("scan-directory", dirPath) as { files: ScannedFile[]; basePath: string };
       return this.processScanResults(result, dirPath);
     } catch (error) {
       console.error("Error scanning directory:", error);
@@ -41,23 +36,23 @@ export default class FileScanner {
 
   /**
    * Process scan results into a course structure
-   * @param {Object} scanResults Raw scan results from main process
-   * @param {string} coursePath Original course path
+   * @param scanResults Raw scan results from main process
+   * @param coursePath Original course path
    */
-  processScanResults(scanResults, coursePath) {
+  processScanResults(scanResults: { files: ScannedFile[]; basePath: string }, coursePath: string): Course {
     // Extract course name from the path
     const pathParts = coursePath.split("/");
     const courseName = pathParts[pathParts.length - 1];
 
     // Create course object
-    const course = {
+    const course: Course = {
       title: courseName,
       path: coursePath,
       sections: [],
     };
 
     // Group files by section
-    const sectionMap = new Map();
+    const sectionMap = new Map<string, Section & { lectures: Lecture[] }>();
 
     // Track if we have a flat structure (videos directly in root)
     let hasFlatStructure = false;
@@ -84,11 +79,11 @@ export default class FileScanner {
           });
         }
 
-        const section = sectionMap.get(sectionName);
+        const section = sectionMap.get(sectionName)!;
 
         if (this.isVideoFile(file.path)) {
           // Add as a lecture
-          const lecture = {
+          const lecture: Lecture = {
             title: this.extractLectureName(file.name),
             filePath: file.path,
             subtitlePath: null, // Will try to find matching subtitle later
@@ -109,8 +104,8 @@ export default class FileScanner {
           });
         }
 
-        const section = sectionMap.get(DEFAULT_SECTION);
-        const lecture = {
+        const section = sectionMap.get(DEFAULT_SECTION)!;
+        const lecture: Lecture = {
           title: this.extractLectureName(file.name),
           filePath: file.path,
           subtitlePath: null,
@@ -132,7 +127,7 @@ export default class FileScanner {
         for (const lecture of section.lectures) {
           const lectureBaseName = lecture.filePath
             .split("/")
-            .pop()
+            .pop()!
             .replace(/\.[^.]+$/, "");
 
           if (lectureBaseName === baseName || lecture.title.includes(baseName)) {
@@ -150,7 +145,7 @@ export default class FileScanner {
 
     // Sort lectures within each section
     for (const section of course.sections) {
-      section.lectures = section.lectures.sort(
+      section.lectures = section.lectures!.sort(
         (a, b) => this.getLectureOrder(a.title) - this.getLectureOrder(b.title),
       );
     }
@@ -161,7 +156,7 @@ export default class FileScanner {
   /**
    * Extract section order from section name (e.g., "01 - Introduction" -> 1)
    */
-  getSectionOrder(sectionName) {
+  getSectionOrder(sectionName: string): number {
     const match = sectionName.match(/^(\d+)/);
     return match ? parseInt(match[1], 10) : 999;
   }
@@ -169,7 +164,7 @@ export default class FileScanner {
   /**
    * Extract lecture order from lecture name (e.g., "01 - Welcome" -> 1)
    */
-  getLectureOrder(lectureName) {
+  getLectureOrder(lectureName: string): number {
     const match = lectureName.match(/^(\d+)/);
     return match ? parseInt(match[1], 10) : 999;
   }
@@ -177,14 +172,14 @@ export default class FileScanner {
   /**
    * Clean section name (remove numbering prefixes)
    */
-  cleanSectionName(name) {
+  cleanSectionName(name: string): string {
     return name.replace(/^\d+\s*[-_.]\s*/, "");
   }
 
   /**
    * Extract lecture name from filename
    */
-  extractLectureName(filename) {
+  extractLectureName(filename: string): string {
     // Remove extension
     let name = filename.replace(/\.[^.]+$/, "");
     // Remove numbering prefix
@@ -195,7 +190,7 @@ export default class FileScanner {
   /**
    * Check if a file is a video
    */
-  isVideoFile(path) {
+  isVideoFile(path: string): boolean {
     const videoExtensions = [".mp4", ".mkv", ".avi", ".mov", ".webm"];
     return videoExtensions.some((ext) => path.toLowerCase().endsWith(ext));
   }
@@ -203,7 +198,7 @@ export default class FileScanner {
   /**
    * Check if a file is a subtitle
    */
-  isSubtitleFile(path) {
+  isSubtitleFile(path: string): boolean {
     const subtitleExtensions = [".srt", ".vtt", ".ass", ".ssa"];
     return subtitleExtensions.some((ext) => path.toLowerCase().endsWith(ext));
   }

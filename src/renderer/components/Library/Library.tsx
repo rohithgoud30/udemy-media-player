@@ -2,20 +2,32 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { ProgressManager } from "../../../js/database";
 
-const Library = ({ courses, loading, onDeleteCourse }) => {
+interface LibraryProps {
+  courses: Course[];
+  loading: boolean;
+  onDeleteCourse: (id: number) => void;
+}
+
+interface CourseCardProps {
+  course: Course;
+  progress?: CourseProgress;
+  onDelete: () => void;
+}
+
+const Library = ({ courses, loading, onDeleteCourse }: LibraryProps) => {
   const [filter, setFilter] = useState("");
   const [sortBy, setSortBy] = useState("dateAdded");
-  const [courseProgress, setCourseProgress] = useState({});
+  const [courseProgress, setCourseProgress] = useState<Record<number, CourseProgress>>({});
 
   // Load progress information for all courses
   React.useEffect(() => {
     async function loadAllProgress() {
-      const progressData = {};
+      const progressData: Record<number, CourseProgress> = {};
 
       for (const course of courses) {
         try {
-          const progress = await ProgressManager.getCourseProgress(course.id);
-          progressData[course.id] = progress;
+          const progress = await ProgressManager.getCourseProgress(course.id!);
+          progressData[course.id!] = progress;
         } catch (error) {
           console.error(`Failed to load progress for course ${course.id}:`, error);
         }
@@ -36,7 +48,7 @@ const Library = ({ courses, loading, onDeleteCourse }) => {
       if (sortBy === "title") {
         return a.title.localeCompare(b.title);
       } else if (sortBy === "dateAdded") {
-        return new Date(b.dateAdded) - new Date(a.dateAdded);
+        return new Date(b.dateAdded!).getTime() - new Date(a.dateAdded!).getTime();
       }
       return 0;
     });
@@ -82,8 +94,8 @@ const Library = ({ courses, loading, onDeleteCourse }) => {
             <CourseCard
               key={course.id}
               course={course}
-              progress={courseProgress[course.id]}
-              onDelete={() => onDeleteCourse(course.id)}
+              progress={courseProgress[course.id!]}
+              onDelete={() => onDeleteCourse(course.id!)}
             />
           ))}
         </div>
@@ -92,11 +104,11 @@ const Library = ({ courses, loading, onDeleteCourse }) => {
   );
 };
 
-const CourseCard = ({ course, progress, onDelete }) => {
+const CourseCard = ({ course, progress, onDelete }: CourseCardProps) => {
   const progressPercentage = progress ? progress.completionPercentage : 0;
 
   // Generate deterministic gradient based on course title
-  const getGradient = (name) => {
+  const getGradient = (name: string): string => {
     // 1. Generate a strong hash from the name
     let hash = 0;
     for (let i = 0; i < name.length; i++) {
@@ -136,7 +148,7 @@ const CourseCard = ({ course, progress, onDelete }) => {
         </h3>
 
         <div className="course-meta">
-          <span>Added: {new Date(course.dateAdded).toLocaleDateString()}</span>
+          <span>Added: {new Date(course.dateAdded!).toLocaleDateString()}</span>
         </div>
 
         <div className="progress-bar">

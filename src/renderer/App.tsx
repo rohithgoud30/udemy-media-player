@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import "./styles/global.css";
 
@@ -14,23 +14,9 @@ import Settings from "./components/Settings/Settings";
 import { CourseManager } from "../js/database";
 
 function App() {
-  const [courses, setCourses] = useState([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [electronStatus, setElectronStatus] = useState("Not checked");
-
-  // Check Electron API availability
-  useEffect(() => {
-    const isElectronAvailable = !!window.electronAPI;
-    console.log("Electron API available?", isElectronAvailable);
-    setElectronStatus(isElectronAvailable ? "Available" : "Not Available");
-
-    if (isElectronAvailable) {
-      console.log("Electron API methods:", Object.keys(window.electronAPI));
-    } else {
-      console.log("Window properties:", Object.keys(window));
-    }
-  }, []);
+  const [error, setError] = useState<string | null>(null);
 
   // Load courses from database on app start
   useEffect(() => {
@@ -51,20 +37,20 @@ function App() {
   }, []);
 
   // Handle course import completion
-  const handleImportComplete = (newCourse) => {
-    setCourses([...courses, newCourse]);
-  };
+  const handleImportComplete = useCallback((newCourse: Course) => {
+    setCourses((prev) => [...prev, newCourse]);
+  }, []);
 
   // Handle course deletion
-  const handleCourseDelete = async (courseId) => {
+  const handleCourseDelete = useCallback(async (courseId: number) => {
     try {
       await CourseManager.deleteCourse(courseId);
-      setCourses(courses.filter((course) => course.id !== courseId));
+      setCourses((prev) => prev.filter((course) => course.id !== courseId));
     } catch (error) {
       console.error("Failed to delete course:", error);
       setError("Failed to delete the course. Please try again.");
     }
-  };
+  }, []);
 
   return (
     <Router>

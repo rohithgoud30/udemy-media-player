@@ -7,11 +7,23 @@ import {
   faVolumeXmark,
 } from "@fortawesome/free-solid-svg-icons";
 
-const VolumeControl = ({ volume, isMuted, onVolumeChange, onToggleMute }) => {
-  const volumeBarRef = useRef(null);
+interface VolumeControlProps {
+  volume: number;
+  isMuted: boolean;
+  onVolumeChange: (v: number) => void;
+  onToggleMute: () => void;
+}
+
+const VolumeControl: React.FC<VolumeControlProps> = ({
+  volume,
+  isMuted,
+  onVolumeChange,
+  onToggleMute,
+}) => {
+  const volumeBarRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  const calculateVolume = (e) => {
+  const calculateVolume = (e: MouseEvent) => {
     if (!volumeBarRef.current) return 0;
     const rect = volumeBarRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -19,15 +31,15 @@ const VolumeControl = ({ volume, isMuted, onVolumeChange, onToggleMute }) => {
     return percentage;
   };
 
-  const handleMouseDown = (e) => {
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     setIsDragging(true);
-    const newVolume = calculateVolume(e);
+    const newVolume = calculateVolume(e.nativeEvent);
     onVolumeChange(newVolume);
   };
 
   // Global listeners for dragging
   useEffect(() => {
-    const handleMouseMove = (e) => {
+    const handleMouseMove = (e: MouseEvent) => {
       if (isDragging) {
         const newVolume = calculateVolume(e);
         onVolumeChange(newVolume);

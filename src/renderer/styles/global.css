@@ -606,12 +606,6 @@ a:hover {
   background: #000;
 }
 
-.video-wrapper .react-player {
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-
 .player-info {
   padding: var(--space-8);
   max-width: 1400px;

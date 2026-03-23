@@ -2,6 +2,11 @@ import Dexie from "dexie";
 
 // Database schema for courses, videos, and watch progress
 class UdemyMediaPlayerDB extends Dexie {
+  courses!: Dexie.Table<Course, number>;
+  sections!: Dexie.Table<Section, number>;
+  lectures!: Dexie.Table<Lecture, number>;
+  progress!: Dexie.Table<LectureProgress, number>;
+
   constructor() {
     super("UdemyMediaPlayerDB");
 
@@ -21,7 +26,7 @@ const db = new UdemyMediaPlayerDB();
 // Helper functions for database operations
 export const CourseManager = {
   // Add a new course to the database
-  async addCourse(course) {
+  async addCourse(course: Course): Promise<number> {
     try {
       // Add the course
       const courseId = await db.courses.add({
@@ -58,7 +63,7 @@ export const CourseManager = {
         }
       }
 
-      return courseId;
+      return courseId as number;
     } catch (error) {
       console.error("Error adding course:", error);
       throw error;
@@ -66,19 +71,19 @@ export const CourseManager = {
   },
 
   // Get all courses
-  async getCourses() {
+  async getCourses(): Promise<Course[]> {
     return await db.courses.toArray();
   },
 
   // Get a specific course with its sections and lectures
-  async getCourseDetails(courseId) {
+  async getCourseDetails(courseId: number): Promise<Course | null> {
     const course = await db.courses.get(courseId);
     if (!course) return null;
 
     const sections = await db.sections.where("courseId").equals(courseId).sortBy("index");
 
     for (const section of sections) {
-      section.lectures = await db.lectures.where("sectionId").equals(section.id).sortBy("index");
+      section.lectures = await db.lectures.where("sectionId").equals(section.id!).sortBy("index");
     }
 
     course.sections = sections;
@@ -86,20 +91,20 @@ export const CourseManager = {
   },
 
   // Delete a course and all related data
-  async deleteCourse(courseId) {
+  async deleteCourse(courseId: number): Promise<boolean> {
     // Get all section IDs for this course
     const sectionIds = await db.sections
       .where("courseId")
       .equals(courseId)
       .toArray()
-      .then((sections) => sections.map((s) => s.id));
+      .then((sections) => sections.map((s) => s.id as number));
 
     // Delete related lectures and their progress
     const lectureIds = await db.lectures
       .where("courseId")
       .equals(courseId)
       .toArray()
-      .then((lectures) => lectures.map((l) => l.id));
+      .then((lectures) => lectures.map((l) => l.id as number));
 
     // Start deletion in proper order
     await db.progress.bulkDelete(lectureIds);
@@ -111,29 +116,24 @@ export const CourseManager = {
   },
 
   // Calculate course and section durations
-  async getCourseDurations(courseId) {
+  async getCourseDurations(courseId: number): Promise<CourseDurations | null> {
     const course = await this.getCourseDetails(courseId);
     if (!course) return null;
 
     let totalDuration = 0;
-    const sectionDurations = {};
+    const sectionDurations: Record<number, number> = {};
 
-    for (const section of course.sections) {
+    for (const section of course.sections!) {
       let sectionDuration = 0;
 
-      for (const lecture of section.lectures) {
-        // Duration is stored in seconds
+      for (const lecture of section.lectures!) {
         const lectureDuration = lecture.duration || 0;
-        console.log(`Lecture: ${lecture.title}, Duration: ${lectureDuration} seconds`);
         sectionDuration += lectureDuration;
         totalDuration += lectureDuration;
       }
 
-      sectionDurations[section.id] = sectionDuration;
-      console.log(`Section: ${section.title}, Total Duration: ${sectionDuration} seconds`);
+      sectionDurations[section.id!] = sectionDuration;
     }
-
-    console.log(`Course Total Duration: ${totalDuration} seconds`);
 
     return {
       totalDuration,
@@ -142,24 +142,18 @@ export const CourseManager = {
   },
 
   // Update video durations for a course
-  async updateLectureDurations(courseId) {
+  async updateLectureDurations(courseId: number): Promise<boolean> {
     try {
       const course = await this.getCourseDetails(courseId);
       if (!course) return false;
 
-      console.log("Updating durations for course:", course.title);
-
       // Create a function to get video duration
-      const getVideoDuration = async (filePath) => {
+      const getVideoDuration = async (filePath: string): Promise<number> => {
         if (!filePath || !window.electronAPI) return 0;
 
         try {
-          // Check if file exists
           const exists = await window.electronAPI.checkFileExists(filePath);
-          if (!exists) {
-            console.log(`File not found: ${filePath}`);
-            return 0;
-          }
+          if (!exists) return 0;
 
           // Create a temporary video element to get duration
           return new Promise((resolve) => {
@@ -171,14 +165,11 @@ export const CourseManager = {
             };
 
             video.onerror = () => {
-              console.log(`Error loading video: ${filePath}`);
               video.remove();
               resolve(0);
             };
 
-            // Set a timeout in case video doesn't load
             setTimeout(() => {
-              console.log(`Timeout getting duration for: ${filePath}`);
               video.remove();
               resolve(0);
             }, 5000);
@@ -200,20 +191,18 @@ export const CourseManager = {
 
       // Update each lecture duration
       let updated = 0;
-      for (const section of course.sections) {
-        for (const lecture of section.lectures) {
+      for (const section of course.sections!) {
+        for (const lecture of section.lectures!) {
           if (lecture.duration === 0 && lecture.filePath) {
             const duration = await getVideoDuration(lecture.filePath);
             if (duration > 0) {
-              await db.lectures.update(lecture.id, { duration });
-              console.log(`Updated duration for ${lecture.title}: ${duration} seconds`);
+              await db.lectures.update(lecture.id!, { duration });
               updated++;
             }
           }
         }
       }
 
-      console.log(`Updated ${updated} lecture durations for course ${course.title}`);
       return updated > 0;
     } catch (error) {
       console.error("Error updating lecture durations:", error);
@@ -225,7 +214,7 @@ export const CourseManager = {
 // Progress tracking functions
 export const ProgressManager = {
   // Save watch progress for a lecture
-  async saveProgress(lectureId, position, isCompleted = false) {
+  async saveProgress(lectureId: number, position: number, isCompleted: boolean = false): Promise<number> {
     const timestamp = new Date();
     const watched = isCompleted ? 1 : position > 0 ? 0.5 : 0;
 
@@ -234,21 +223,21 @@ export const ProgressManager = {
       position,
       watched,
       lastWatched: timestamp,
-    });
+    }) as number;
   },
 
   // Mark a lecture as watched/unwatched
-  async markLectureWatched(lectureId, watched = true) {
+  async markLectureWatched(lectureId: number, watched: boolean = true): Promise<number> {
     return await db.progress.put({
       lectureId,
       position: 0, // Reset position if marking unwatched
       watched: watched ? 1 : 0,
       lastWatched: new Date(),
-    });
+    }) as number;
   },
 
   // Get watch progress for a lecture
-  async getLectureProgress(lectureId) {
+  async getLectureProgress(lectureId: number): Promise<LectureProgress> {
     return (
       (await db.progress.get(lectureId)) || {
         lectureId,
@@ -260,11 +249,11 @@ export const ProgressManager = {
   },
 
   // Get all watched lectures for a course
-  async getCourseProgress(courseId) {
+  async getCourseProgress(courseId: number): Promise<CourseProgress> {
     // Get all lecture IDs for this course
     const lectures = await db.lectures.where("courseId").equals(courseId).toArray();
 
-    const lectureIds = lectures.map((l) => l.id);
+    const lectureIds = lectures.map((l) => l.id as number);
 
     // Get progress for all lectures
     const progress = await db.progress.where("lectureId").anyOf(lectureIds).toArray();
@@ -285,7 +274,7 @@ export const ProgressManager = {
   },
 
   // Save the last played lecture for a course
-  async saveLastPlayedLecture(courseId, lectureId) {
+  async saveLastPlayedLecture(courseId: number, lectureId: number): Promise<boolean> {
     try {
       // Store in localStorage for quick access
       localStorage.setItem(`lastPlayed_${courseId}`, lectureId.toString());
@@ -299,7 +288,7 @@ export const ProgressManager = {
   },
 
   // Get the last played lecture for a course
-  async getLastPlayedLecture(courseId) {
+  async getLastPlayedLecture(courseId: number): Promise<number | null> {
     try {
       const lectureId = localStorage.getItem(`lastPlayed_${courseId}`);
       return lectureId ? parseInt(lectureId) : null;

@@ -1,11 +1,18 @@
+export const checkFileExists = async (filePath: string): Promise<boolean> => {
+  if (window.electronAPI) {
+    return await window.electronAPI.checkFileExists(filePath);
+  }
+  return false;
+};
+
 /**
  * Formats a duration in seconds to a string (e.g. "1:05:30" or "05:30")
- * @param {number} seconds - Duration in seconds
- * @returns {string} Formatted duration string
+ * @param seconds - Duration in seconds
+ * @returns Formatted duration string
  */
-export const formatDuration = (seconds) => {
+export const formatDuration = (seconds: number): string => {
   if (!seconds || isNaN(seconds)) return "0:00";
-  
+
   const hrs = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
   const secs = Math.floor(seconds % 60);
@@ -20,10 +27,10 @@ export const formatDuration = (seconds) => {
 
 /**
  * Formats a duration in seconds to a human-readable string (e.g. "1 hr 5 mins")
- * @param {number} seconds - Duration in seconds
- * @returns {string} Human-readable duration string
+ * @param seconds - Duration in seconds
+ * @returns Human-readable duration string
  */
-export const formatTimeWords = (seconds) => {
+export const formatTimeWords = (seconds: number): string => {
   if (!seconds) return "";
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);

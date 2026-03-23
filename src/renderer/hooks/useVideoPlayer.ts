@@ -1,17 +1,52 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import type { RefObject, SyntheticEvent } from "react";
 
-export const useVideoPlayer = (videoRef, options = {}) => {
+export interface Options {
+  defaultSpeed?: number;
+}
+
+export interface VideoEvents {
+  onTimeUpdate: () => void;
+  onLoadedMetadata: () => void;
+  onPlay: (e: SyntheticEvent<HTMLVideoElement>) => void;
+  onPause: (e: SyntheticEvent<HTMLVideoElement>) => void;
+  onVolumeChange: (e: SyntheticEvent<HTMLVideoElement>) => void;
+  onRateChange: (e: SyntheticEvent<HTMLVideoElement>) => void;
+}
+
+export interface UseVideoPlayerReturn {
+  isPlaying: boolean;
+  currentTime: number;
+  duration: number;
+  volume: number;
+  isMuted: boolean;
+  playbackRate: number;
+  isFullscreen: boolean;
+  togglePlay: () => void;
+  seek: (time: number) => void;
+  seekRelative: (seconds: number) => void;
+  setVolume: (newVolume: number) => void;
+  toggleMute: () => void;
+  setPlaybackRate: (rate: number) => void;
+  toggleFullscreen: (containerRef: RefObject<HTMLElement | null>) => void;
+  videoEvents: VideoEvents;
+}
+
+export const useVideoPlayer = (
+  videoRef: RefObject<HTMLVideoElement | null>,
+  options: Options = {},
+): UseVideoPlayerReturn => {
   // State
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(1);
-  const [isMuted, setIsMuted] = useState(false);
-  const [playbackRate, setPlaybackRate] = useState(1);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [currentTime, setCurrentTime] = useState<number>(0);
+  const [duration, setDuration] = useState<number>(0);
+  const [volume, setVolume] = useState<number>(1);
+  const [isMuted, setIsMuted] = useState<boolean>(false);
+  const [playbackRate, setPlaybackRate] = useState<number>(1);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
   // Previous volume for unmuting
-  const previousVolume = useRef(1);
+  const previousVolume = useRef<number>(1);
 
   // Initial setup
   useEffect(() => {
@@ -31,22 +66,9 @@ export const useVideoPlayer = (videoRef, options = {}) => {
     }
   }, [isPlaying, videoRef]);
 
-  const setPlayState = useCallback(
-    (playing) => {
-      if (videoRef.current) {
-        if (playing) {
-          videoRef.current.play().catch((e) => console.warn("Play prevented:", e));
-        } else {
-          videoRef.current.pause();
-        }
-      }
-    },
-    [videoRef],
-  );
-
   // Handle Seek
   const seek = useCallback(
-    (time) => {
+    (time: number) => {
       if (videoRef.current) {
         const newTime = Math.max(0, Math.min(duration, time));
         videoRef.current.currentTime = newTime;
@@ -57,7 +79,7 @@ export const useVideoPlayer = (videoRef, options = {}) => {
   );
 
   const seekRelative = useCallback(
-    (seconds) => {
+    (seconds: number) => {
       if (videoRef.current) {
         const newTime = Math.max(0, Math.min(duration, currentTime + seconds));
         videoRef.current.currentTime = newTime;
@@ -69,7 +91,7 @@ export const useVideoPlayer = (videoRef, options = {}) => {
 
   // Handle Volume
   const handleVolumeChange = useCallback(
-    (newVolume) => {
+    (newVolume: number) => {
       if (videoRef.current) {
         const clampedVolume = Math.max(0, Math.min(1, newVolume));
         videoRef.current.volume = clampedVolume;
@@ -109,7 +131,7 @@ export const useVideoPlayer = (videoRef, options = {}) => {
 
   // Handle Playback Rate
   const handlePlaybackRateChange = useCallback(
-    (rate) => {
+    (rate: number) => {
       if (videoRef.current) {
         videoRef.current.playbackRate = rate;
         setPlaybackRate(rate);
@@ -120,14 +142,16 @@ export const useVideoPlayer = (videoRef, options = {}) => {
 
   // Handle Fullscreen
   const toggleFullscreen = useCallback(
-    (containerRef) => {
+    (containerRef: RefObject<HTMLElement | null>) => {
       if (!document.fullscreenElement) {
         if (containerRef?.current) {
           containerRef.current
             .requestFullscreen()
             .catch((e) => console.error("Fullscreen error:", e));
         } else if (videoRef.current) {
-          videoRef.current.requestFullscreen().catch((e) => console.error("Fullscreen error:", e));
+          videoRef.current
+            .requestFullscreen()
+            .catch((e) => console.error("Fullscreen error:", e));
         }
       } else {
         document.exitFullscreen();
@@ -150,19 +174,29 @@ export const useVideoPlayer = (videoRef, options = {}) => {
     }
   }, [videoRef, playbackRate]);
 
-  const handleCreateEvents = useCallback(() => {
-    return {
+  const onPlay = useCallback((_e: SyntheticEvent<HTMLVideoElement>) => setIsPlaying(true), []);
+  const onPause = useCallback((_e: SyntheticEvent<HTMLVideoElement>) => setIsPlaying(false), []);
+  const onVolumeChangeEvent = useCallback((e: SyntheticEvent<HTMLVideoElement>) => {
+    const target = e.target as HTMLVideoElement;
+    setVolume(target.volume);
+    setIsMuted(target.muted);
+  }, []);
+  const onRateChangeEvent = useCallback((e: SyntheticEvent<HTMLVideoElement>) => {
+    const target = e.target as HTMLVideoElement;
+    setPlaybackRate(target.playbackRate);
+  }, []);
+
+  const videoEvents = useMemo<VideoEvents>(
+    () => ({
       onTimeUpdate: handleTimeUpdate,
       onLoadedMetadata: handleLoadedMetadata,
-      onPlay: () => setIsPlaying(true),
-      onPause: () => setIsPlaying(false),
-      onVolumeChange: (e) => {
-        setVolume(e.target.volume);
-        setIsMuted(e.target.muted);
-      },
-      onRateChange: (e) => setPlaybackRate(e.target.playbackRate),
-    };
-  }, [handleTimeUpdate, handleLoadedMetadata]);
+      onPlay,
+      onPause,
+      onVolumeChange: onVolumeChangeEvent,
+      onRateChange: onRateChangeEvent,
+    }),
+    [handleTimeUpdate, handleLoadedMetadata, onPlay, onPause, onVolumeChangeEvent, onRateChangeEvent],
+  );
 
   // Sync fullscreen state
   useEffect(() => {
@@ -183,13 +217,12 @@ export const useVideoPlayer = (videoRef, options = {}) => {
     playbackRate,
     isFullscreen,
     togglePlay,
-    setPlayState,
     seek,
     seekRelative,
     setVolume: handleVolumeChange,
     toggleMute,
     setPlaybackRate: handlePlaybackRateChange,
     toggleFullscreen,
-    videoEvents: handleCreateEvents(),
+    videoEvents,
   };
 };

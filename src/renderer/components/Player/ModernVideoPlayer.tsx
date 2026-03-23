@@ -4,6 +4,7 @@ import "./ModernVideoPlayer.css";
 import { CourseManager, ProgressManager } from "../../../js/database";
 import db from "../../../js/database";
 import SettingsManager from "../../utils/settingsManager";
+import { checkFileExists } from "../../utils/formatters";
 
 // Hooks
 import { useVideoPlayer } from "../../hooks/useVideoPlayer";
@@ -12,31 +13,22 @@ import { useSubtitles } from "../../hooks/useSubtitles";
 // Components
 import VideoControls from "./VideoControls";
 
-// Helper for checking if a file exists
-const checkFileExists = async (filePath) => {
-  if (window.electronAPI) {
-    return await window.electronAPI.checkFileExists(filePath);
-  }
-  return false;
-};
-
 const ModernVideoPlayer = () => {
   const { lectureId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const routeState = location.state || {};
+  const routeState: Record<string, any> = location.state || {};
 
-  const videoRef = useRef(null);
-  const containerRef = useRef(null);
-  const hideControlsTimeoutRef = useRef(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const hideControlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [lecture, setLecture] = useState(null);
-  const [course, setCourse] = useState(null);
+  const [lecture, setLecture] = useState<Lecture | null>(null);
+  const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [nearbyLectures, setNearbyLectures] = useState([]);
+  const [error, setError] = useState<string | null>(null);
+  const [nearbyLectures, setNearbyLectures] = useState<Lecture[]>([]);
   const [showControls, setShowControls] = useState(true);
-  const [notification, setNotification] = useState(null);
   const [showCompletionOverlay, setShowCompletionOverlay] = useState(false);
 
   // Use custom hooks
@@ -69,31 +61,31 @@ const ModernVideoPlayer = () => {
   useEffect(() => {
     if (containerRef.current && subtitleSettings) {
       const fontSize =
-        {
+        ({
           small: "0.9rem",
           medium: "1.1rem",
           large: "1.4rem",
           "x-large": "1.7rem",
-        }[subtitleSettings.fontSize] || "1.1rem";
+        } as Record<string, string>)[subtitleSettings.fontSize] || "1.1rem";
 
       const fontColor =
-        {
+        ({
           white: "#ffffff",
           yellow: "#ffff00",
           green: "#00ff00",
           red: "#ff0000",
           blue: "#0066ff",
           cyan: "#00ffff",
-        }[subtitleSettings.fontColor] || "#ffffff";
+        } as Record<string, string>)[subtitleSettings.fontColor] || "#ffffff";
 
       const backgroundColor =
-        {
+        ({
           black: "rgba(0, 0, 0, 0.85)",
           transparent: "transparent",
           "semi-transparent": "rgba(0, 0, 0, 0.5)",
           "dark-blue": "rgba(0, 30, 60, 0.85)",
           "dark-green": "rgba(0, 40, 20, 0.85)",
-        }[subtitleSettings.backgroundColor] || "rgba(0, 0, 0, 0.85)";
+        } as Record<string, string>)[subtitleSettings.backgroundColor] || "rgba(0, 0, 0, 0.85)";
 
       containerRef.current.style.setProperty("--subtitle-font-size", fontSize);
       containerRef.current.style.setProperty("--subtitle-font-color", fontColor);
@@ -101,30 +93,25 @@ const ModernVideoPlayer = () => {
     }
   }, [subtitleSettings]);
 
-  // Show notification helper
-  const showNotification = (message, type = "info", duration = 3000) => {
-    setNotification({ message, type });
-    setTimeout(() => setNotification(null), duration);
-  };
-
   // Navigate to lecture
   const navigateToLecture = useCallback(
-    async (direction) => {
+    async (direction: "next" | "prev") => {
       if (!lecture || !lecture.courseId || !course) return;
 
       try {
         // Flatten all lectures
-        let allLectures = [];
-        course.sections.forEach((section) => {
+        let allLectures: Lecture[] = [];
+        course.sections?.forEach((section) => {
           if (section.lectures) allLectures.push(...section.lectures);
         });
 
         // Sort
         allLectures.sort((a, b) => {
-          const sectionA = course.sections.find((s) => s.id === a.sectionId);
-          const sectionB = course.sections.find((s) => s.id === b.sectionId);
-          if (sectionA.index !== sectionB.index) return sectionA.index - sectionB.index;
-          return a.index - b.index;
+          const sectionA = course.sections?.find((s) => s.id === a.sectionId);
+          const sectionB = course.sections?.find((s) => s.id === b.sectionId);
+          if (sectionA?.index !== sectionB?.index)
+            return (sectionA?.index ?? 0) - (sectionB?.index ?? 0);
+          return (a.index ?? 0) - (b.index ?? 0);
         });
 
         const currentIndex = allLectures.findIndex((l) => l.id === lecture.id);
@@ -137,7 +124,7 @@ const ModernVideoPlayer = () => {
         if (targetIndex >= 0 && targetIndex < allLectures.length) {
           // Save progress before navigating
           if (videoRef.current) {
-            await ProgressManager.saveProgress(lecture.id, videoRef.current.currentTime);
+            await ProgressManager.saveProgress(lecture.id!, videoRef.current.currentTime);
           }
 
           const targetLecture = allLectures[targetIndex];
@@ -148,8 +135,8 @@ const ModernVideoPlayer = () => {
             state: { ...routeState, maintainFullscreen: wasInFullscreen },
           });
         }
-      } catch (error) {
-        console.error("Error navigating:", error);
+      } catch (err) {
+        console.error("Error navigating:", err);
       }
     },
     [lecture, course, navigate, routeState],
@@ -172,7 +159,7 @@ const ModernVideoPlayer = () => {
         }
 
         // Get lecture from DB
-        const lectureData = await db.lectures.get(parseInt(lectureId));
+        const lectureData = await db.lectures.get(parseInt(lectureId!));
         if (!lectureData) {
           setError(`Lecture ${lectureId} not found`);
           return;
@@ -182,7 +169,7 @@ const ModernVideoPlayer = () => {
         if (routeState.filePath) lectureData.filePath = routeState.filePath;
 
         // Video URL - use file:// protocol (webSecurity is disabled in dev mode)
-        const createVideoUrl = (filePath) => {
+        const createVideoUrl = (filePath: string): string | null => {
           if (!filePath) return null;
           try {
             const normalizedPath = filePath.replace(/\\/g, "/");
@@ -195,7 +182,7 @@ const ModernVideoPlayer = () => {
         const videoUrl = routeState.videoUrl || createVideoUrl(lectureData.filePath);
 
         // Progress
-        const progress = await ProgressManager.getLectureProgress(lectureData.id);
+        const progress = await ProgressManager.getLectureProgress(lectureData.id!);
         const savedPos =
           routeState.startPosition !== undefined
             ? routeState.startPosition
@@ -212,7 +199,7 @@ const ModernVideoPlayer = () => {
 
         // Save last played
         if (lectureData.courseId) {
-          await ProgressManager.saveLastPlayedLecture(lectureData.courseId, lectureData.id);
+          await ProgressManager.saveLastPlayedLecture(lectureData.courseId, lectureData.id!);
 
           // Load Course
           const courseData = await CourseManager.getCourseDetails(lectureData.courseId);
@@ -220,13 +207,12 @@ const ModernVideoPlayer = () => {
 
           // Nearby lectures logic
           if (courseData?.sections) {
-            const all = [];
+            const all: Lecture[] = [];
             courseData.sections.forEach((s) => {
-              if (s.lectures) all.push(...s.lectures.map((l) => ({ ...l, sectionTitle: s.title })));
+              if (s.lectures)
+                all.push(...s.lectures.map((l) => ({ ...l, sectionTitle: s.title })));
             });
-            // Sort... ( reusing sort logic or trusting DB order if index is reliable)
-            // Simplified nearby logic
-            const idx = all.findIndex((l) => l.id === parseInt(lectureId));
+            const idx = all.findIndex((l) => l.id === parseInt(lectureId!));
             const start = Math.max(0, idx - 3);
             const end = Math.min(all.length - 1, idx + 3);
             setNearbyLectures(all.slice(start, end + 1));
@@ -260,9 +246,9 @@ const ModernVideoPlayer = () => {
   }, [lectureId]);
 
   const onLoadedMetadata = useCallback(
-    (e) => {
-      videoEvents.onLoadedMetadata(e);
-      if (!hasRestoredPosition.current && lecture?.savedProgress > 0) {
+    (e: React.SyntheticEvent<HTMLVideoElement>) => {
+      videoEvents.onLoadedMetadata();
+      if (!hasRestoredPosition.current && lecture?.savedProgress && lecture.savedProgress > 0) {
         if (videoRef.current) {
           videoRef.current.currentTime = lecture.savedProgress;
           hasRestoredPosition.current = true;
@@ -289,7 +275,7 @@ const ModernVideoPlayer = () => {
 
     const interval = setInterval(() => {
       if (videoRef.current && isPlaying) {
-        ProgressManager.saveProgress(lecture.id, videoRef.current.currentTime);
+        ProgressManager.saveProgress(lecture.id!, videoRef.current.currentTime);
       }
     }, 5000);
 
@@ -299,22 +285,26 @@ const ModernVideoPlayer = () => {
   // Auto-mark completed
   useEffect(() => {
     if (duration > 0 && currentTime > duration * 0.98 && !lecture?.completed) {
-      ProgressManager.saveProgress(lecture.id, 0, true);
-      setLecture((prev) => ({ ...prev, completed: true }));
-      // Check user preference before showing toast
+      ProgressManager.saveProgress(lecture!.id!, 0, true);
+      setLecture((prev) => (prev ? { ...prev, completed: true } : prev));
       const playerSettings = SettingsManager.getPlayerSettings();
       if (playerSettings.showCompletionOverlay) {
         setShowCompletionOverlay(true);
-        // Auto-hide toast after 3 seconds
-        setTimeout(() => setShowCompletionOverlay(false), 3000);
       }
     }
   }, [currentTime, duration, lecture]);
 
+  // Auto-hide completion toast
+  useEffect(() => {
+    if (!showCompletionOverlay) return;
+    const timer = setTimeout(() => setShowCompletionOverlay(false), 3000);
+    return () => clearTimeout(timer);
+  }, [showCompletionOverlay]);
+
   // Keyboard Shortcuts
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (["INPUT", "TEXTAREA"].includes(document.activeElement?.tagName)) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (["INPUT", "TEXTAREA"].includes((document.activeElement as HTMLElement)?.tagName)) return;
 
       switch (e.key.toLowerCase()) {
         case " ":
@@ -361,7 +351,7 @@ const ModernVideoPlayer = () => {
   useEffect(() => {
     const resetTimer = () => {
       setShowControls(true);
-      clearTimeout(hideControlsTimeoutRef.current);
+      clearTimeout(hideControlsTimeoutRef.current!);
       if (isPlaying) {
         hideControlsTimeoutRef.current = setTimeout(() => setShowControls(false), 3000);
       }
@@ -380,17 +370,9 @@ const ModernVideoPlayer = () => {
         container.removeEventListener("mousemove", resetTimer);
         container.removeEventListener("mouseenter", resetTimer);
       }
-      clearTimeout(hideControlsTimeoutRef.current);
+      clearTimeout(hideControlsTimeoutRef.current!);
     };
   }, [isPlaying]);
-
-  const handleSeekStart = () => {
-    // Optional: pause while seeking?
-  };
-
-  const handleSeekEnd = () => {
-    // Resume if was playing?
-  };
 
   if (loading) return <div className="loading">Loading...</div>;
   if (error)
@@ -429,8 +411,6 @@ const ModernVideoPlayer = () => {
           // Actions
           onPlayPause={togglePlay}
           onSeek={seek}
-          onSeekStart={handleSeekStart}
-          onSeekEnd={handleSeekEnd}
           onSeekRelative={seekRelative}
           onVolumeChange={setVolume}
           onToggleMute={toggleMute}
@@ -440,8 +420,6 @@ const ModernVideoPlayer = () => {
           onNextLecture={() => navigateToLecture("next")}
           onPrevLecture={() => navigateToLecture("prev")}
         />
-
-        {notification && <div className="notification">{notification.message}</div>}
 
         {showCompletionOverlay && (
           <div className="completion-toast">

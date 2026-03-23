@@ -1,7 +1,7 @@
 // Settings Manager Utility
 // Ensures consistent settings across the app and forces critical settings to always be true
 
-const DEFAULT_SETTINGS = {
+export const DEFAULT_SETTINGS: AppSettings = {
   playback: {
     defaultSpeed: 1.0,
     autoPlay: true,
@@ -27,7 +27,7 @@ class SettingsManager {
   /**
    * Force critical settings to always be true
    */
-  static enforceCriticalSettings(settings) {
+  static enforceCriticalSettings(settings: AppSettings): AppSettings {
     return {
       ...settings,
       playback: {
@@ -42,23 +42,23 @@ class SettingsManager {
   /**
    * Load settings from localStorage with proper defaults and enforcement
    */
-  static loadSettings() {
+  static loadSettings(): AppSettings {
     try {
       const savedSettings = localStorage.getItem(this.STORAGE_KEY);
 
       if (savedSettings) {
-        const parsed = JSON.parse(savedSettings);
+        const parsed = JSON.parse(savedSettings) as Partial<AppSettings>;
 
         // Merge with defaults to ensure all properties exist
-        const mergedSettings = {
+        const mergedSettings: AppSettings = {
           ...DEFAULT_SETTINGS,
           ...parsed,
           playback: {
-            ...parsed.playbackck,
+            ...DEFAULT_SETTINGS.playback,
             ...(parsed.playback || {}),
           },
           shortcuts: {
-            ...parsed.shortcutsts,
+            ...DEFAULT_SETTINGS.shortcuts,
             ...(parsed.shortcuts || {}),
           },
         };
@@ -77,7 +77,7 @@ class SettingsManager {
   /**
    * Save settings to localStorage with critical settings enforcement
    */
-  static saveSettings(settings) {
+  static saveSettings(settings: AppSettings): AppSettings {
     try {
       const enforcedSettings = this.enforceCriticalSettings(settings);
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(enforcedSettings));
@@ -97,7 +97,7 @@ class SettingsManager {
   /**
    * Get only player-specific settings
    */
-  static getPlayerSettings() {
+  static getPlayerSettings(): PlayerSettings {
     const settings = this.loadSettings();
     return {
       defaultSpeed: settings.playback.defaultSpeed,
@@ -112,13 +112,16 @@ class SettingsManager {
   /**
    * Update specific setting and save
    */
-  static updateSetting(section, key, value) {
+  static updateSetting(
+    section: keyof AppSettings,
+    key: string,
+    value: unknown
+  ): AppSettings {
     const settings = this.loadSettings();
 
-    settings[section] = {
-      ...settings[section],
-      [key]: value,
-    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sectionObj = (settings as any)[section] || {};
+    (settings as any)[section] = { ...sectionObj, [key]: value };
 
     return this.saveSettings(settings);
   }
@@ -126,7 +129,7 @@ class SettingsManager {
   /**
    * Reset to defaults
    */
-  static resetToDefaults() {
+  static resetToDefaults(): AppSettings {
     localStorage.removeItem(this.STORAGE_KEY);
     return DEFAULT_SETTINGS;
   }

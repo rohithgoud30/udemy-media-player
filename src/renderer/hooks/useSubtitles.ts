@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
+import { checkFileExists } from "../utils/formatters";
 
 // Helper to convert SRT to WebVTT format
-const convertSRTtoVTT = (srtContent) => {
+const convertSRTtoVTT = (srtContent: string): string => {
   let vttContent = "WEBVTT\n\n";
   const blocks = srtContent.split(/\n\s*\n/);
 
@@ -17,16 +18,16 @@ const convertSRTtoVTT = (srtContent) => {
   return vttContent;
 };
 
-const checkFileExists = async (filePath) => {
-  if (window.electronAPI) {
-    return await window.electronAPI.checkFileExists(filePath);
-  }
-  return false;
-};
-
-export const useSubtitles = (videoRef, filePath) => {
-  const [subtitlesEnabled, setSubtitlesEnabled] = useState(false);
-  const [subtitleSettings, setSubtitleSettings] = useState({
+export const useSubtitles = (
+  videoRef: React.RefObject<HTMLVideoElement | null>,
+  filePath: string | undefined
+): {
+  subtitlesEnabled: boolean;
+  subtitleSettings: SubtitleSettings;
+  toggleSubtitles: () => void;
+} => {
+  const [subtitlesEnabled, setSubtitlesEnabled] = useState<boolean>(false);
+  const [subtitleSettings, setSubtitleSettings] = useState<SubtitleSettings>({
     enabled: true,
     fontSize: "medium",
     fontColor: "white",
@@ -55,7 +56,9 @@ export const useSubtitles = (videoRef, filePath) => {
 
   // Setup subtitles
   useEffect(() => {
-    const setupSubtitles = async () => {
+    let blobUrl: string | null = null;
+
+    const setupSubtitles = async (): Promise<void> => {
       if (!filePath || !videoRef.current || !window.electronAPI) return;
 
       try {
@@ -75,13 +78,13 @@ export const useSubtitles = (videoRef, filePath) => {
 
         const vttContent = convertSRTtoVTT(srtContent);
         const blob = new Blob([vttContent], { type: "text/vtt" });
-        const subtitleUrl = URL.createObjectURL(blob);
+        blobUrl = URL.createObjectURL(blob);
 
         const track = document.createElement("track");
         track.kind = "subtitles";
         track.label = "English";
         track.srclang = "en";
-        track.src = subtitleUrl;
+        track.src = blobUrl;
         track.default = true;
 
         video.appendChild(track);
@@ -99,13 +102,19 @@ export const useSubtitles = (videoRef, filePath) => {
     };
 
     setupSubtitles();
-  }, [filePath, videoRef, subtitleSettings.enabled]);
+
+    return () => {
+      if (blobUrl) {
+        URL.revokeObjectURL(blobUrl);
+      }
+    };
+  }, [filePath, videoRef]);
 
   // Toggle function
-  const toggleSubtitles = useCallback(() => {
+  const toggleSubtitles = useCallback((): void => {
     if (videoRef.current && videoRef.current.textTracks.length > 0) {
       const track = videoRef.current.textTracks[0];
-      const newMode = track.mode === "showing" ? "hidden" : "showing";
+      const newMode: TextTrackMode = track.mode === "showing" ? "hidden" : "showing";
       track.mode = newMode;
       const isEnabled = newMode === "showing";
       setSubtitlesEnabled(isEnabled);

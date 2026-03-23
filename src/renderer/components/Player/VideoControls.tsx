@@ -15,7 +15,38 @@ import ProgressBar from "./ProgressBar";
 import VolumeControl from "./VolumeControl";
 import { formatDuration } from "../../utils/formatters";
 
-const VideoControls = ({
+const PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75, 4];
+
+interface VideoControlsProps {
+  // Playback State
+  isPlaying: boolean;
+  currentTime: number;
+  duration: number;
+  volume: number;
+  isMuted: boolean;
+  playbackRate: number;
+  isFullscreen: boolean;
+  subtitlesEnabled: boolean;
+
+  // Handlers
+  onPlayPause: () => void;
+  onSeek: (time: number) => void;
+  onSeekStart?: () => void;
+  onSeekEnd?: () => void;
+  onVolumeChange: (v: number) => void;
+  onToggleMute: () => void;
+  onToggleFullscreen: () => void;
+  onToggleSubtitles: () => void;
+  onPlaybackRateChange: (rate: number) => void;
+  onNextLecture: () => void;
+  onPrevLecture: () => void;
+  onSeekRelative: (seconds: number) => void;
+
+  // Visibility
+  visible?: boolean;
+}
+
+const VideoControls: React.FC<VideoControlsProps> = ({
   // Playback State
   isPlaying,
   currentTime,
@@ -43,8 +74,6 @@ const VideoControls = ({
   // Visibility
   visible = true,
 }) => {
-  const playbackRates = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75, 4];
-
   return (
     <div className={`video-controls ${visible ? "visible" : ""}`}>
       {/* Progress Bar */}
@@ -129,7 +158,7 @@ const VideoControls = ({
             className="speed-select"
             title="Playback Speed"
           >
-            {playbackRates.map((rate) => (
+            {PLAYBACK_RATES.map((rate) => (
               <option key={rate} value={rate}>
                 {rate}x
               </option>

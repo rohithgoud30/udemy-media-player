@@ -3,45 +3,52 @@ import { useNavigate } from "react-router-dom";
 import FileScanner from "../../../js/fileScanner";
 import { CourseManager } from "../../../js/database";
 
+interface ImportCourseProps {
+  onImportComplete: (course: Course) => void;
+}
+
 // Check if running in Electron or browser environment
-const isElectron = () => {
+const isElectron = (): boolean => {
   return window.electronAPI !== undefined;
 };
 
 // Browser-compatible path utilities
 const pathUtils = {
-  basename: (filePath) => {
+  basename: (filePath: string): string => {
     // Extract the filename from a path
-    return filePath.split("/").pop().split("\\").pop();
+    return filePath.split("/").pop()!.split("\\").pop()!;
   },
-  dirname: (filePath) => {
+  dirname: (filePath: string): string => {
     // Get the directory name from a path
     return filePath.substring(
       0,
       Math.max(filePath.lastIndexOf("/"), filePath.lastIndexOf("\\"))
     );
   },
-  join: (...parts) => {
+  join: (...parts: string[]): string => {
     // Join path segments
     return parts.join("/");
   },
 };
 
-const ImportCourse = ({ onImportComplete }) => {
+const ImportCourse = ({ onImportComplete }: ImportCourseProps) => {
   const [dragging, setDragging] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [error, setError] = useState(null);
-  const [progress, setProgress] = useState({ status: "", percent: 0 });
+  const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<{ status: string; percent: number }>({
+    status: "",
+    percent: 0,
+  });
   const navigate = useNavigate();
   const fileScanner = useRef(new FileScanner());
-  const fileInputRef = useRef(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Create hidden file input for directory selection
   useEffect(() => {
     const input = document.createElement("input");
     input.type = "file";
-    input.webkitdirectory = true; // Allow directory selection
-    input.directory = true;
+    (input as any).webkitdirectory = true; // Allow directory selection
+    (input as any).directory = true;
     input.multiple = true;
     input.style.display = "none";
 
@@ -59,51 +66,45 @@ const ImportCourse = ({ onImportComplete }) => {
   }, []);
 
   // Handle files selected from the file input
-  const handleFileInputChange = async (event) => {
+  const handleFileInputChange = async (event: Event) => {
     try {
-      const files = Array.from(event.target.files);
+      const files = Array.from((event.target as HTMLInputElement).files ?? []);
 
-      if (files.length === 0) {
-        console.log("No files selected");
-        return;
-      }
+      if (files.length === 0) return;
 
       // Get the directory path from the first file
       // In web environment, we'll use the common parent directory
-      const firstFilePath = files[0].path || files[0].webkitRelativePath;
-      let dirPath;
+      const firstFile = files[0] as File & { path?: string };
+      let dirPath: string;
 
-      if (files[0].path) {
+      if (firstFile.path) {
         // Electron environment - we have access to full path
-        dirPath = pathUtils.dirname(files[0].path);
+        dirPath = pathUtils.dirname(firstFile.path);
       } else {
         // Web environment - we only have webkitRelativePath like "folder/file.mp4"
         // Extract the top-level folder
-        const relativePath = files[0].webkitRelativePath;
+        const relativePath = firstFile.webkitRelativePath;
         dirPath = relativePath.split("/")[0];
       }
 
-      console.log("Selected directory:", dirPath);
-      console.log("Number of files:", files.length);
-
-      // We can process the files directly instead of scanning the directory
-      await importCourseFromFiles(files, dirPath);
-    } catch (error) {
-      console.error("Failed to process selected files:", error);
+      await importCourseFromFiles(files as Array<File & { path?: string }>, dirPath);
+    } catch (err: any) {
+      console.error("Failed to process selected files:", err);
       setError(
-        `Failed to process selected files: ${error.message}. Please try again.`
+        `Failed to process selected files: ${err.message}. Please try again.`
       );
     }
   };
 
   // Process course files directly without using Electron's directory scanning
-  const importCourseFromFiles = async (files, dirPath) => {
+  const importCourseFromFiles = async (
+    files: Array<File & { path?: string }>,
+    dirPath: string
+  ) => {
     try {
       setImporting(true);
       setProgress({ status: "Processing selected files...", percent: 10 });
       setError(null);
-
-      console.log("Processing files for course import...");
 
       // Organize files by type and structure
       const videoFiles = files.filter((file) => {
@@ -126,10 +127,6 @@ const ImportCourse = ({ onImportComplete }) => {
         );
       });
 
-      console.log(
-        `Found ${videoFiles.length} video files and ${subtitleFiles.length} subtitle files`
-      );
-
       if (videoFiles.length === 0) {
         throw new Error("No video files found in the selected directory.");
       }
@@ -137,7 +134,10 @@ const ImportCourse = ({ onImportComplete }) => {
       setProgress({ status: "Organizing course structure...", percent: 30 });
 
       // Group videos by section (folder)
-      const sections = {};
+      const sections: Record<
+        string,
+        { title: string; lectures: Array<{ title: string; filePath: string; subtitlePath: string | null; duration: number; size: number }> }
+      > = {};
 
       for (const file of videoFiles) {
         const filePath = file.path || file.webkitRelativePath;
@@ -200,18 +200,13 @@ const ImportCourse = ({ onImportComplete }) => {
         sections: Object.values(sections),
       };
 
-      // Add course to database
       const courseId = await CourseManager.addCourse(courseData);
-      console.log("Course added with ID:", courseId);
-
-      // Get the full course details with the assigned ID
       const newCourse = await CourseManager.getCourseDetails(courseId);
-      console.log("Retrieved course details:", newCourse);
 
       setProgress({ status: "Course imported successfully!", percent: 100 });
 
       // Notify parent component
-      if (onImportComplete) {
+      if (onImportComplete && newCourse) {
         onImportComplete(newCourse);
       }
 
@@ -219,21 +214,21 @@ const ImportCourse = ({ onImportComplete }) => {
       setTimeout(() => {
         navigate(`/course/${courseId}`);
       }, 1500);
-    } catch (error) {
-      console.error("Error importing course from files:", error);
-      setError(`Failed to import course: ${error.message}`);
+    } catch (err: any) {
+      console.error("Error importing course from files:", err);
+      setError(`Failed to import course: ${err.message}`);
       setImporting(false);
     }
   };
 
   // Helper function to clean section names
-  const cleanSectionName = (name) => {
+  const cleanSectionName = (name: string): string => {
     // Remove numbering prefixes like "01 - " or "1. "
     return name.replace(/^\d+\s*[-_.:]\s*/, "");
   };
 
   // Helper function to extract lecture names from filenames
-  const extractLectureName = (filename) => {
+  const extractLectureName = (filename: string): string => {
     // Remove extension
     let name = filename.replace(/\.[^.]+$/, "");
     // Remove numbering prefix
@@ -244,9 +239,7 @@ const ImportCourse = ({ onImportComplete }) => {
   // Handle folder selection from file dialog
   const handleSelectFolder = async () => {
     try {
-      // First try to use Electron API if available
       if (isElectron()) {
-        console.log("Using Electron API for directory selection");
         const dirPath = await window.electronAPI.selectDirectory();
         if (dirPath) {
           await importCourse(dirPath);
@@ -254,41 +247,39 @@ const ImportCourse = ({ onImportComplete }) => {
         }
       }
 
-      // Fall back to browser API
-      console.log("Using browser API for directory selection");
       if (fileInputRef.current) {
         fileInputRef.current.click();
       } else {
         throw new Error("File input not initialized");
       }
-    } catch (error) {
-      console.error("Failed to open file dialog:", error);
+    } catch (err: any) {
+      console.error("Failed to open file dialog:", err);
       setError(
-        `Failed to open file selector: ${error.message}. Please try again.`
+        `Failed to open file selector: ${err.message}. Please try again.`
       );
     }
   };
 
   // Handle drag events
-  const handleDragEnter = (e) => {
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setDragging(true);
   };
 
-  const handleDragLeave = (e) => {
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setDragging(false);
   };
 
-  const handleDragOver = (e) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
   };
 
   // Handle folder drop
-  const handleDrop = async (e) => {
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setDragging(false);
@@ -305,11 +296,11 @@ const ImportCourse = ({ onImportComplete }) => {
         if (entry && entry.isDirectory) {
           try {
             // Get the path from Electron (this requires custom handling)
-            const path = e.dataTransfer.items[i].getAsFile().path;
+            const path = (e.dataTransfer.items[i].getAsFile() as any).path;
             await importCourse(path);
             break;
-          } catch (error) {
-            console.error("Failed to import dropped folder:", error);
+          } catch (err) {
+            console.error("Failed to import dropped folder:", err);
             setError(
               'Failed to import the dropped folder. Please try using the "Select Folder" button instead.'
             );
@@ -320,19 +311,13 @@ const ImportCourse = ({ onImportComplete }) => {
   };
 
   // Import a course from a directory
-  const importCourse = async (dirPath) => {
+  const importCourse = async (dirPath: string) => {
     try {
       setImporting(true);
       setProgress({ status: "Scanning directory...", percent: 10 });
       setError(null);
 
-      console.log("Starting directory scan for path:", dirPath);
-      console.log("FileScanner instance:", fileScanner.current);
-
-      // Scan the directory for course content
-      console.log("Calling scanCourseDirectory...");
       const courseData = await fileScanner.current.scanCourseDirectory(dirPath);
-      console.log("Scan complete, course data:", courseData);
 
       if (
         !courseData ||
@@ -346,24 +331,14 @@ const ImportCourse = ({ onImportComplete }) => {
       }
 
       setProgress({ status: "Processing course structure...", percent: 50 });
-      console.log(
-        "Processing course structure with sections:",
-        courseData.sections.length
-      );
 
-      // Add the course to the database
-      console.log("Adding course to database...");
       const courseId = await CourseManager.addCourse(courseData);
-      console.log("Course added with ID:", courseId);
-
-      // Get the full course details with the assigned ID
       const newCourse = await CourseManager.getCourseDetails(courseId);
-      console.log("Retrieved course details:", newCourse);
 
       setProgress({ status: "Course imported successfully!", percent: 100 });
 
       // Notify parent component
-      if (onImportComplete) {
+      if (onImportComplete && newCourse) {
         onImportComplete(newCourse);
       }
 
@@ -371,9 +346,9 @@ const ImportCourse = ({ onImportComplete }) => {
       setTimeout(() => {
         navigate(`/course/${courseId}`);
       }, 1500);
-    } catch (error) {
-      console.error("Failed to import course:", error);
-      setError(`Failed to import course: ${error.message}`);
+    } catch (err: any) {
+      console.error("Failed to import course:", err);
+      setError(`Failed to import course: ${err.message}`);
       setImporting(false);
     }
   };

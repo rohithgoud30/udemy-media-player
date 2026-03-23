@@ -3,17 +3,23 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { CourseManager, ProgressManager } from "../../../js/database";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlay, faArrowRotateRight } from "@fortawesome/free-solid-svg-icons";
+import { formatDuration, formatTimeWords } from "../../utils/formatters";
+
+interface CourseProgressBarProps {
+  course: Course;
+  lectureProgress: Record<number, LectureProgress>;
+}
 
 const CourseView = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const [course, setCourse] = useState(null);
+  const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [lectureProgress, setLectureProgress] = useState({});
-  const [expandedSections, setExpandedSections] = useState({});
-  const [courseDurations, setCourseDurations] = useState(null);
-  const [lastPlayedLectureId, setLastPlayedLectureId] = useState(null);
+  const [error, setError] = useState<string | null>(null);
+  const [lectureProgress, setLectureProgress] = useState<Record<number, LectureProgress>>({});
+  const [expandedSections, setExpandedSections] = useState<Record<number, boolean>>({});
+  const [courseDurations, setCourseDurations] = useState<CourseDurations | null>(null);
+  const [lastPlayedLectureId, setLastPlayedLectureId] = useState<number | null>(null);
 
   // Load course data and progress
   useEffect(() => {
@@ -21,7 +27,7 @@ const CourseView = () => {
       try {
         setLoading(true);
         const courseData = await CourseManager.getCourseDetails(
-          parseInt(courseId)
+          parseInt(courseId!)
         );
 
         if (!courseData) {
@@ -32,54 +38,48 @@ const CourseView = () => {
         setCourse(courseData);
 
         // Check if we need to update lecture durations
-        const needsDurationUpdate = courseData.sections.some((section) =>
-          section.lectures.some((lecture) => lecture.duration === 0)
+        const needsDurationUpdate = courseData.sections!.some((section) =>
+          section.lectures!.some((lecture) => lecture.duration === 0)
         );
 
         if (needsDurationUpdate) {
-          console.log("Updating lecture durations...");
-          await CourseManager.updateLectureDurations(parseInt(courseId));
+          await CourseManager.updateLectureDurations(parseInt(courseId!));
         }
 
         // Load course and section durations
         const durations = await CourseManager.getCourseDurations(
-          parseInt(courseId)
+          parseInt(courseId!)
         );
-        console.log("Course durations:", durations);
         setCourseDurations(durations);
 
         // Get the last played lecture
         const lastPlayedId = await ProgressManager.getLastPlayedLecture(
-          parseInt(courseId)
+          parseInt(courseId!)
         );
-        console.log("Last played lecture ID:", lastPlayedId);
         setLastPlayedLectureId(lastPlayedId);
 
         // Set expanded sections based on last played lecture
-        const expanded = {};
+        const expanded: Record<number, boolean> = {};
         if (lastPlayedId) {
           // Find the section containing the last played lecture
           let sectionFound = false;
-          for (const section of courseData.sections) {
+          for (const section of courseData.sections!) {
             if (
-              section.lectures.some((lecture) => lecture.id === lastPlayedId)
+              section.lectures!.some((lecture) => lecture.id === lastPlayedId)
             ) {
-              expanded[section.id] = true;
+              expanded[section.id!] = true;
               sectionFound = true;
-              console.log(
-                `Expanding section ${section.title} containing last played lecture`
-              );
               break;
             }
           }
 
           // If we couldn't find the section, default to first section
-          if (!sectionFound && courseData.sections.length > 0) {
+          if (!sectionFound && courseData.sections!.length > 0) {
             const firstSection =
-              courseData.sections.find((s) => s.index === 0) ||
-              courseData.sections[0];
+              courseData.sections!.find((s) => s.index === 0) ||
+              courseData.sections![0];
             if (firstSection) {
-              expanded[firstSection.id] = true;
+              expanded[firstSection.id!] = true;
             }
           }
         } else if (courseData.sections && courseData.sections.length > 0) {
@@ -88,25 +88,23 @@ const CourseView = () => {
             courseData.sections.find((s) => s.index === 0) ||
             courseData.sections[0];
           if (firstSection) {
-            expanded[firstSection.id] = true;
+            expanded[firstSection.id!] = true;
           }
         }
 
         setExpandedSections(expanded);
 
         // Load progress for all lectures
-        const progress = {};
-        for (const section of courseData.sections) {
-          for (const lecture of section.lectures) {
-            const lectureProgress = await ProgressManager.getLectureProgress(
-              lecture.id
-            );
-            progress[lecture.id] = lectureProgress;
+        const progress: Record<number, LectureProgress> = {};
+        for (const section of courseData.sections!) {
+          for (const lecture of section.lectures!) {
+            const lp = await ProgressManager.getLectureProgress(lecture.id!);
+            progress[lecture.id!] = lp;
           }
         }
         setLectureProgress(progress);
-      } catch (error) {
-        console.error("Error loading course details:", error);
+      } catch (err) {
+        console.error("Error loading course details:", err);
         setError("Failed to load course details");
       } finally {
         setLoading(false);
@@ -117,7 +115,7 @@ const CourseView = () => {
   }, [courseId]);
 
   // Toggle section expansion with accordion behavior
-  const toggleSection = (sectionId) => {
+  const toggleSection = (sectionId: number) => {
     setExpandedSections((prev) => {
       // If this section is already open and being clicked, just close it
       if (prev[sectionId]) {
@@ -128,7 +126,7 @@ const CourseView = () => {
       }
 
       // Create a new object with all sections closed
-      const newState = {};
+      const newState: Record<number, boolean> = {};
 
       // Then set only the clicked section to open
       newState[sectionId] = true;
@@ -138,7 +136,7 @@ const CourseView = () => {
   };
 
   // Mark lecture as watched/unwatched
-  const toggleWatchStatus = async (lectureId, e) => {
+  const toggleWatchStatus = async (lectureId: number, e: React.MouseEvent) => {
     e.stopPropagation();
 
     try {
@@ -155,8 +153,8 @@ const CourseView = () => {
           watched: newWatchedStatus ? 1 : 0,
         },
       }));
-    } catch (error) {
-      console.error("Error toggling watch status:", error);
+    } catch (err) {
+      console.error("Error toggling watch status:", err);
     }
   };
 
@@ -200,42 +198,42 @@ const CourseView = () => {
         <CourseProgressBar course={course} lectureProgress={lectureProgress} />
         {courseDurations && (
           <div className="course-total-duration">
-            Total Duration: {formatDuration(courseDurations.totalDuration)}
+            Total Duration: {formatTimeWords(courseDurations.totalDuration)}
           </div>
         )}
       </div>
 
       <div className="sections-container">
-        {course.sections.map((section) => (
+        {course.sections!.map((section) => (
           <div key={section.id} className="section">
             <div
               className="section-header"
-              onClick={() => toggleSection(section.id)}
+              onClick={() => toggleSection(section.id!)}
             >
               <div className="section-title">
                 <span className="expand-icon">
-                  {expandedSections[section.id] ? "▼" : "►"}
+                  {expandedSections[section.id!] ? "▼" : "►"}
                 </span>
                 <h3>{section.title}</h3>
               </div>
               <div className="section-meta">
-                {section.lectures.length} lectures
+                {section.lectures!.length} lectures
                 {courseDurations &&
-                  courseDurations.sectionDurations[section.id] && (
+                  courseDurations.sectionDurations[section.id!] && (
                     <span className="section-duration">
                       •{" "}
-                      {formatDuration(
-                        courseDurations.sectionDurations[section.id]
+                      {formatTimeWords(
+                        courseDurations.sectionDurations[section.id!]
                       )}
                     </span>
                   )}
               </div>
             </div>
 
-            {expandedSections[section.id] && (
+            {expandedSections[section.id!] && (
               <div className="lectures-list">
-                {section.lectures.map((lecture) => {
-                  const progress = lectureProgress[lecture.id] || {
+                {section.lectures!.map((lecture) => {
+                  const progress = lectureProgress[lecture.id!] || {
                     watched: 0,
                     position: 0,
                   };
@@ -257,7 +255,7 @@ const CourseView = () => {
                       <div className="lecture-info">
                         <button
                           className={`watch-toggle ${watchStatus}`}
-                          onClick={(e) => toggleWatchStatus(lecture.id, e)}
+                          onClick={(e) => toggleWatchStatus(lecture.id!, e)}
                           title={
                             watchStatus === "watched"
                               ? "Mark as unwatched"
@@ -296,7 +294,7 @@ const CourseView = () => {
                           }`}
                           title={
                             progress.position > 0 && progress.watched !== 1
-                              ? `Resume at ${formatTime(progress.position)}`
+                              ? `Resume at ${formatDuration(progress.position)}`
                               : "Play lecture"
                           }
                           state={{ startPosition: progress.position }}
@@ -308,7 +306,7 @@ const CourseView = () => {
                                 className="resume-icon"
                               />
                               <span className="resume-text">
-                                {formatTime(progress.position)}
+                                {formatDuration(progress.position)}
                               </span>
                             </>
                           ) : (
@@ -335,10 +333,10 @@ const CourseView = () => {
 };
 
 // Helper component for course progress bar
-const CourseProgressBar = ({ course, lectureProgress }) => {
+const CourseProgressBar = ({ course, lectureProgress }: CourseProgressBarProps) => {
   // Calculate overall completion
-  const totalLectures = course.sections.reduce(
-    (total, section) => total + section.lectures.length,
+  const totalLectures = course.sections!.reduce(
+    (total, section) => total + section.lectures!.length,
     0
   );
 
@@ -373,30 +371,5 @@ const CourseProgressBar = ({ course, lectureProgress }) => {
     </div>
   );
 };
-
-// Helper function to format time
-function formatTime(seconds) {
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = Math.floor(seconds % 60);
-  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
-}
-
-// Add a helper function to format duration
-function formatDuration(seconds) {
-  if (!seconds) return "0 mins";
-
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-
-  if (hours === 0) {
-    // Only show minutes if less than an hour
-    return `${minutes} ${minutes === 1 ? "min" : "mins"}`;
-  } else {
-    // Show hours and minutes for longer videos
-    return `${hours} ${hours === 1 ? "hr" : "hrs"} ${minutes} ${
-      minutes === 1 ? "min" : "mins"
-    }`;
-  }
-}
 
 export default CourseView;
