@@ -2,8 +2,17 @@ import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { CourseManager, ProgressManager } from "../../../js/database";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlay, faArrowRotateRight } from "@fortawesome/free-solid-svg-icons";
+import {
+  faPlay,
+  faArrowRotateRight,
+  faChevronDown,
+  faChevronRight,
+  faCheck,
+  faClock,
+  faArrowLeft,
+} from "@fortawesome/free-solid-svg-icons";
 import { formatDuration, formatTimeWords } from "../../utils/formatters";
+import "./CourseView.css";
 
 interface CourseProgressBarProps {
   course: Course;
@@ -21,7 +30,6 @@ const CourseView = () => {
   const [courseDurations, setCourseDurations] = useState<CourseDurations | null>(null);
   const [lastPlayedLectureId, setLastPlayedLectureId] = useState<number | null>(null);
 
-  // Load course data and progress
   useEffect(() => {
     async function loadCourseDetails() {
       try {
@@ -37,7 +45,6 @@ const CourseView = () => {
 
         setCourse(courseData);
 
-        // Check if we need to update lecture durations
         const needsDurationUpdate = courseData.sections!.some((section) =>
           section.lectures!.some((lecture) => lecture.duration === 0)
         );
@@ -46,22 +53,18 @@ const CourseView = () => {
           await CourseManager.updateLectureDurations(parseInt(courseId!));
         }
 
-        // Load course and section durations
         const durations = await CourseManager.getCourseDurations(
           parseInt(courseId!)
         );
         setCourseDurations(durations);
 
-        // Get the last played lecture
         const lastPlayedId = await ProgressManager.getLastPlayedLecture(
           parseInt(courseId!)
         );
         setLastPlayedLectureId(lastPlayedId);
 
-        // Set expanded sections based on last played lecture
         const expanded: Record<number, boolean> = {};
         if (lastPlayedId) {
-          // Find the section containing the last played lecture
           let sectionFound = false;
           for (const section of courseData.sections!) {
             if (
@@ -73,7 +76,6 @@ const CourseView = () => {
             }
           }
 
-          // If we couldn't find the section, default to first section
           if (!sectionFound && courseData.sections!.length > 0) {
             const firstSection =
               courseData.sections!.find((s) => s.index === 0) ||
@@ -83,7 +85,6 @@ const CourseView = () => {
             }
           }
         } else if (courseData.sections && courseData.sections.length > 0) {
-          // Default to expanding first section if no last played lecture
           const firstSection =
             courseData.sections.find((s) => s.index === 0) ||
             courseData.sections[0];
@@ -94,7 +95,6 @@ const CourseView = () => {
 
         setExpandedSections(expanded);
 
-        // Load progress for all lectures
         const progress: Record<number, LectureProgress> = {};
         for (const section of courseData.sections!) {
           for (const lecture of section.lectures!) {
@@ -114,28 +114,17 @@ const CourseView = () => {
     loadCourseDetails();
   }, [courseId]);
 
-  // Toggle section expansion with accordion behavior
   const toggleSection = (sectionId: number) => {
     setExpandedSections((prev) => {
-      // If this section is already open and being clicked, just close it
       if (prev[sectionId]) {
-        return {
-          ...prev,
-          [sectionId]: false,
-        };
+        return { ...prev, [sectionId]: false };
       }
-
-      // Create a new object with all sections closed
       const newState: Record<number, boolean> = {};
-
-      // Then set only the clicked section to open
       newState[sectionId] = true;
-
       return newState;
     });
   };
 
-  // Mark lecture as watched/unwatched
   const toggleWatchStatus = async (lectureId: number, e: React.MouseEvent) => {
     e.stopPropagation();
 
@@ -145,7 +134,6 @@ const CourseView = () => {
 
       await ProgressManager.markLectureWatched(lectureId, newWatchedStatus);
 
-      // Update local state
       setLectureProgress((prev) => ({
         ...prev,
         [lectureId]: {
@@ -184,157 +172,150 @@ const CourseView = () => {
 
   return (
     <div className="course-view">
-      <div className="course-header">
-        <h1 title={course.title}>{course.title}</h1>
-        <div className="course-actions">
-          <Link to="/" className="back-button">
-            ← Back to Library
-          </Link>
-        </div>
+      <div className="cv-top-bar">
+        <Link to="/" className="cv-back-link">
+          <FontAwesomeIcon icon={faArrowLeft} />
+          <span>Library</span>
+        </Link>
       </div>
 
-      <div className="course-progress">
-        <h3>Course Progress</h3>
+      <div className="cv-hero">
+        <h1 className="cv-title" title={course.title}>{course.title}</h1>
         <CourseProgressBar course={course} lectureProgress={lectureProgress} />
         {courseDurations && (
-          <div className="course-total-duration">
-            Total Duration: {formatTimeWords(courseDurations.totalDuration)}
+          <div className="cv-meta-row">
+            <span className="cv-meta-item">
+              <FontAwesomeIcon icon={faClock} />
+              {formatTimeWords(courseDurations.totalDuration)}
+            </span>
+            <span className="cv-meta-item">
+              {course.sections!.reduce((t, s) => t + s.lectures!.length, 0)} lectures
+            </span>
+            <span className="cv-meta-item">
+              {course.sections!.length} sections
+            </span>
           </div>
         )}
       </div>
 
-      <div className="sections-container">
-        {course.sections!.map((section) => (
-          <div key={section.id} className="section">
-            <div
-              className="section-header"
-              onClick={() => toggleSection(section.id!)}
-            >
-              <div className="section-title">
-                <span className="expand-icon">
-                  {expandedSections[section.id!] ? "▼" : "►"}
-                </span>
-                <h3>{section.title}</h3>
-              </div>
-              <div className="section-meta">
-                {section.lectures!.length} lectures
-                {courseDurations &&
-                  courseDurations.sectionDurations[section.id!] && (
-                    <span className="section-duration">
-                      •{" "}
-                      {formatTimeWords(
-                        courseDurations.sectionDurations[section.id!]
-                      )}
-                    </span>
-                  )}
-              </div>
-            </div>
+      <div className="cv-sections">
+        {course.sections!.map((section, sIdx) => {
+          const isExpanded = expandedSections[section.id!];
+          const sectionWatched = section.lectures!.filter(
+            (l) => lectureProgress[l.id!]?.watched === 1
+          ).length;
+          const sectionTotal = section.lectures!.length;
 
-            {expandedSections[section.id!] && (
-              <div className="lectures-list">
-                {section.lectures!.map((lecture) => {
-                  const progress = lectureProgress[lecture.id!] || {
-                    watched: 0,
-                    position: 0,
-                  };
-                  const watchStatus =
-                    progress.watched === 1
-                      ? "watched"
-                      : progress.watched === 0.5
-                      ? "partial"
-                      : "unwatched";
-                  const isLastPlayed = lecture.id === lastPlayedLectureId;
+          return (
+            <div key={section.id} className={`cv-section ${isExpanded ? "expanded" : ""}`}>
+              <div
+                className="cv-section-header"
+                onClick={() => toggleSection(section.id!)}
+              >
+                <div className="cv-section-left">
+                  <span className="cv-section-chevron">
+                    <FontAwesomeIcon icon={isExpanded ? faChevronDown : faChevronRight} />
+                  </span>
+                  <div className="cv-section-info">
+                    <span className="cv-section-label">Section {sIdx + 1}</span>
+                    <h3 className="cv-section-name">{section.title}</h3>
+                  </div>
+                </div>
+                <div className="cv-section-right">
+                  <span className="cv-section-count">
+                    {sectionWatched}/{sectionTotal}
+                  </span>
+                  {courseDurations &&
+                    courseDurations.sectionDurations[section.id!] && (
+                      <span className="cv-section-duration">
+                        {formatTimeWords(courseDurations.sectionDurations[section.id!])}
+                      </span>
+                    )}
+                </div>
+              </div>
 
-                  return (
-                    <div
-                      key={lecture.id}
-                      className={`lecture ${watchStatus} ${
-                        isLastPlayed ? "last-played" : ""
-                      }`}
-                    >
-                      <div className="lecture-info">
+              {isExpanded && (
+                <div className="cv-lectures">
+                  {section.lectures!.map((lecture, lIdx) => {
+                    const progress = lectureProgress[lecture.id!] || {
+                      watched: 0,
+                      position: 0,
+                    };
+                    const isWatched = progress.watched === 1;
+                    const isPartial = progress.watched === 0.5;
+                    const isLastPlayed = lecture.id === lastPlayedLectureId;
+                    const hasResume = progress.position > 0 && !isWatched;
+
+                    return (
+                      <div
+                        key={lecture.id}
+                        className={`cv-lecture ${isWatched ? "watched" : ""} ${isPartial ? "partial" : ""} ${isLastPlayed ? "last-played" : ""}`}
+                      >
                         <button
-                          className={`watch-toggle ${watchStatus}`}
+                          className={`cv-check ${isWatched ? "checked" : ""} ${isPartial ? "partial" : ""}`}
                           onClick={(e) => toggleWatchStatus(lecture.id!, e)}
-                          title={
-                            watchStatus === "watched"
-                              ? "Mark as unwatched"
-                              : "Mark as watched"
-                          }
+                          title={isWatched ? "Mark as unwatched" : "Mark as watched"}
                         >
-                          {watchStatus === "watched" ? "✓" : ""}
+                          {isWatched && <FontAwesomeIcon icon={faCheck} />}
                         </button>
 
-                        <Link
-                          to={`/watch/${lecture.id}`}
-                          className="lecture-title"
-                          title={lecture.title}
-                        >
-                          {lecture.title}
+                        <div className="cv-lecture-body">
+                          <Link
+                            to={`/watch/${lecture.id}`}
+                            className="cv-lecture-title"
+                            title={lecture.title}
+                          >
+                            <span className="cv-lecture-num">{lIdx + 1}.</span>
+                            {lecture.title}
+                          </Link>
                           {isLastPlayed && (
-                            <span className="last-played-badge">
-                              Last Played
+                            <span className="cv-now-badge">Continue</span>
+                          )}
+                        </div>
+
+                        <div className="cv-lecture-right">
+                          {lecture.duration > 0 && (
+                            <span className="cv-lecture-dur">
+                              {formatDuration(lecture.duration)}
                             </span>
                           )}
-                        </Link>
+                          <Link
+                            to={`/watch/${lecture.id}`}
+                            className={`cv-play ${hasResume ? "resume" : ""}`}
+                            title={
+                              hasResume
+                                ? `Resume at ${formatDuration(progress.position)}`
+                                : "Play lecture"
+                            }
+                            state={{ startPosition: progress.position }}
+                          >
+                            {hasResume ? (
+                              <>
+                                <FontAwesomeIcon icon={faArrowRotateRight} />
+                                <span>{formatDuration(progress.position)}</span>
+                              </>
+                            ) : (
+                              <>
+                                <FontAwesomeIcon icon={faPlay} />
+                                <span>Play</span>
+                              </>
+                            )}
+                          </Link>
+                        </div>
                       </div>
-
-                      <div className="lecture-actions">
-                        {lecture.duration > 0 && (
-                          <span className="lecture-duration">
-                            {formatDuration(lecture.duration)}
-                          </span>
-                        )}
-                        <Link
-                          to={`/watch/${lecture.id}`}
-                          className={`play-button ${
-                            progress.position > 0 && progress.watched !== 1
-                              ? "resume"
-                              : ""
-                          }`}
-                          title={
-                            progress.position > 0 && progress.watched !== 1
-                              ? `Resume at ${formatDuration(progress.position)}`
-                              : "Play lecture"
-                          }
-                          state={{ startPosition: progress.position }}
-                        >
-                          {progress.position > 0 && progress.watched !== 1 ? (
-                            <>
-                              <FontAwesomeIcon
-                                icon={faArrowRotateRight}
-                                className="resume-icon"
-                              />
-                              <span className="resume-text">
-                                {formatDuration(progress.position)}
-                              </span>
-                            </>
-                          ) : (
-                            <>
-                              <FontAwesomeIcon
-                                icon={faPlay}
-                                className="play-icon"
-                              />
-                              <span className="play-text">Play</span>
-                            </>
-                          )}
-                        </Link>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        ))}
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 };
 
-// Helper component for course progress bar
 const CourseProgressBar = ({ course, lectureProgress }: CourseProgressBarProps) => {
-  // Calculate overall completion
   const totalLectures = course.sections!.reduce(
     (total, section) => total + section.lectures!.length,
     0
@@ -355,17 +336,17 @@ const CourseProgressBar = ({ course, lectureProgress }: CourseProgressBarProps) 
     : 0;
 
   return (
-    <div className="progress-container">
-      <div className="progress-bar">
+    <div className="cv-progress">
+      <div className="cv-progress-bar">
         <div
-          className="progress-fill"
+          className="cv-progress-fill"
           style={{ width: `${completionPercentage}%` }}
-        ></div>
+        />
       </div>
-      <div className="progress-stats">
-        <span>{completionPercentage}% Complete</span>
-        <span>
-          {watchedLectures} of {totalLectures} lectures completed
+      <div className="cv-progress-label">
+        <span className="cv-progress-pct">{completionPercentage}%</span>
+        <span className="cv-progress-detail">
+          {watchedLectures} of {totalLectures} completed
         </span>
       </div>
     </div>

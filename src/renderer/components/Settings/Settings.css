@@ -1,8 +1,9 @@
-/* Settings Component Styles */
+/* Settings - macOS System Preferences Style */
+
 .settings-container {
-  max-width: 900px;
+  max-width: 650px;
   margin: 0 auto;
-  padding: var(--space-6);
+  padding: var(--space-4);
   color: var(--text-primary);
 }
 
@@ -10,152 +11,197 @@
   font-size: var(--text-2xl);
   margin-bottom: var(--space-6);
   color: var(--text-primary);
-  border-bottom: 1px solid var(--border-subtle);
-  padding-bottom: var(--space-2);
+  letter-spacing: -0.02em;
 }
 
+/* Settings Section - macOS Grouped Card */
 .settings-section {
-  margin-bottom: var(--space-8);
-  background-color: var(--bg-card);
+  margin-bottom: var(--space-4);
+  background-color: var(--glass-bg);
   border-radius: var(--radius-lg);
-  padding: var(--space-6);
-  border: 1px solid var(--border-subtle);
-  box-shadow: var(--shadow-sm);
+  padding: var(--space-5);
+  border: 1px solid var(--glass-border);
 }
 
 .settings-section h2 {
-  font-size: var(--text-xl);
+  font-size: var(--text-base);
   margin-top: 0;
-  margin-bottom: var(--space-6);
-  color: var(--text-primary);
+  margin-bottom: var(--space-4);
+  color: var(--text-secondary);
+  font-weight: var(--weight-semibold);
   border-bottom: 1px solid var(--border-subtle);
   padding-bottom: var(--space-2);
+  letter-spacing: -0.01em;
 }
 
+/* Setting Items - macOS Form Row */
 .setting-item {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
   display: flex;
   align-items: center;
   flex-wrap: wrap;
+  padding: var(--space-2) 0;
+}
+
+.setting-item + .setting-item {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: var(--space-3);
 }
 
 .setting-item label {
   flex: 1;
   min-width: 200px;
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   margin-right: var(--space-4);
-  color: var(--text-secondary);
-}
-
-.setting-item select,
-.setting-item input[type='text'],
-.setting-item input[type='number'] {
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-default);
-  background-color: var(--bg-surface);
   color: var(--text-primary);
   font-size: var(--text-sm);
 }
 
-.setting-item select:focus,
-.setting-item input:focus {
-  outline: 2px solid var(--primary-500);
-  border-color: var(--primary-500);
+/* macOS-style Select */
+.setting-item select,
+.setting-item input[type='text'],
+.setting-item input[type='number'] {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background-color: var(--bg-inset);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  box-shadow: var(--shadow-inset);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
+.setting-item select:focus,
+.setting-item input:focus {
+  outline: none;
+  border-color: var(--accent-500);
+  box-shadow: 0 0 0 3px rgba(139, 95, 248, 0.2);
+}
+
+/* macOS-style Toggle */
 .setting-item input[type='checkbox'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 38px;
+  height: 22px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-full);
+  position: relative;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  flex-shrink: 0;
   margin-right: var(--space-2);
+}
+
+.setting-item input[type='checkbox']::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: var(--text-muted);
+  border-radius: 50%;
+  transition: all var(--transition-normal);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.setting-item input[type='checkbox']:checked {
+  background: var(--accent-500);
+  border-color: var(--accent-500);
+}
+
+.setting-item input[type='checkbox']:checked::before {
+  left: 18px;
+  background: white;
 }
 
 .setting-description {
   font-size: var(--text-xs);
   color: var(--text-muted);
   margin-top: var(--space-1);
-  margin-left: var(--space-5);
+  margin-left: 0;
   margin-bottom: 0;
   width: 100%;
+  line-height: 1.4;
 }
 
-.download-location {
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.download-path-input {
-  display: flex;
-  width: 100%;
-  margin-top: var(--space-2);
-}
-
-.download-path-input input {
-  flex: 1;
-  margin-right: var(--space-2);
-}
-
+/* Keyboard Shortcuts - macOS Key Style */
 .keyboard-shortcuts-table {
   width: 100%;
-  border-collapse: collapse;
 }
 
 .shortcut-row {
   display: flex;
-  border-bottom: 1px solid var(--border-subtle);
+  align-items: center;
   padding: var(--space-2) 0;
+}
+
+.shortcut-row + .shortcut-row {
+  border-top: 1px solid var(--border-subtle);
 }
 
 .shortcut-label {
   flex: 1;
-  font-weight: 500;
+  font-weight: var(--weight-normal);
   color: var(--text-secondary);
+  font-size: var(--text-sm);
 }
 
+/* macOS Keycap Style */
 .shortcut-key {
-  padding: 4px 8px;
-  background-color: var(--bg-elevated);
+  padding: 3px 10px;
+  background: linear-gradient(180deg, var(--bg-elevated), var(--bg-inset));
   border: 1px solid var(--border-default);
+  border-bottom-width: 2px;
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   color: var(--text-primary);
   text-align: center;
-  min-width: 80px;
+  min-width: 70px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
 }
 
 .shortcut-info {
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
   color: var(--text-muted);
-  margin-top: var(--space-4);
+  margin-top: var(--space-3);
   font-style: italic;
 }
 
+/* Action Buttons - macOS Style */
 .settings-actions {
   display: flex;
   justify-content: flex-end;
-  gap: var(--space-4);
-  margin-top: var(--space-8);
+  gap: var(--space-3);
+  margin-top: var(--space-6);
 }
 
 .settings-actions button {
-  padding: var(--space-2) var(--space-6);
+  padding: var(--space-2) var(--space-5);
   border-radius: var(--radius-md);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 
 .settings-actions button:active {
-  transform: translateY(1px);
+  transform: scale(0.97);
 }
 
 .save-button {
-  background-color: var(--primary-600);
+  background-color: var(--accent-500);
   color: white;
   border: none;
 }
 
 .save-button:hover {
-  background-color: var(--primary-500);
+  background-color: var(--accent-600);
 }
 
 .reset-button {
@@ -179,15 +225,13 @@
   color: var(--text-primary);
 }
 
-/* Removed local CSS variables to use global tokens */
-
-/* Credits Section */
+/* Credits */
 .settings-credits {
   text-align: center;
   padding: var(--space-6);
   margin-top: var(--space-4);
   color: var(--text-muted);
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
 }
 
 .settings-credits p {
@@ -196,6 +240,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-1);
+  color: var(--text-muted);
 }
 
 .settings-credits .heart {
@@ -205,31 +250,26 @@
 }
 
 @keyframes heartbeat {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.2);
-  }
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
 }
 
 .settings-credits .credits-link {
-  color: var(--primary-500);
+  color: var(--accent-400);
   text-decoration: none;
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   transition: color var(--transition-fast);
 }
 
 .settings-credits .credits-link:hover {
-  color: var(--primary-400);
+  color: var(--accent-500);
   text-decoration: underline;
 }
 
-/* Responsive adjustments */
+/* Responsive */
 @media (max-width: 768px) {
   .settings-container {
-    padding: var(--space-4);
+    padding: var(--space-3);
   }
 
   .settings-section {
@@ -252,6 +292,5 @@
 
   .settings-actions button {
     width: 100%;
-    margin-bottom: var(--space-2);
   }
 }

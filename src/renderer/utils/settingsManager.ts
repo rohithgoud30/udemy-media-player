@@ -119,9 +119,8 @@ class SettingsManager {
   ): AppSettings {
     const settings = this.loadSettings();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sectionObj = (settings as any)[section] || {};
-    (settings as any)[section] = { ...sectionObj, [key]: value };
+    const sectionObj = settings[section] as Record<string, unknown> || {};
+    (settings[section] as Record<string, unknown>) = { ...sectionObj, [key]: value };
 
     return this.saveSettings(settings);
   }

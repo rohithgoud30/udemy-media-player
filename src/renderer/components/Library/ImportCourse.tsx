@@ -47,8 +47,8 @@ const ImportCourse = ({ onImportComplete }: ImportCourseProps) => {
   useEffect(() => {
     const input = document.createElement("input");
     input.type = "file";
-    (input as any).webkitdirectory = true; // Allow directory selection
-    (input as any).directory = true;
+    input.setAttribute("webkitdirectory", "");
+    input.setAttribute("directory", "");
     input.multiple = true;
     input.style.display = "none";
 
@@ -88,10 +88,11 @@ const ImportCourse = ({ onImportComplete }: ImportCourseProps) => {
       }
 
       await importCourseFromFiles(files as Array<File & { path?: string }>, dirPath);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to process selected files:", err);
+      const message = err instanceof Error ? err.message : "Unknown error";
       setError(
-        `Failed to process selected files: ${err.message}. Please try again.`
+        `Failed to process selected files: ${message}. Please try again.`
       );
     }
   };
@@ -214,9 +215,10 @@ const ImportCourse = ({ onImportComplete }: ImportCourseProps) => {
       setTimeout(() => {
         navigate(`/course/${courseId}`);
       }, 1500);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error importing course from files:", err);
-      setError(`Failed to import course: ${err.message}`);
+      const message = err instanceof Error ? err.message : "Unknown error";
+      setError(`Failed to import course: ${message}`);
       setImporting(false);
     }
   };
@@ -252,10 +254,11 @@ const ImportCourse = ({ onImportComplete }: ImportCourseProps) => {
       } else {
         throw new Error("File input not initialized");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to open file dialog:", err);
+      const message = err instanceof Error ? err.message : "Unknown error";
       setError(
-        `Failed to open file selector: ${err.message}. Please try again.`
+        `Failed to open file selector: ${message}. Please try again.`
       );
     }
   };
@@ -296,8 +299,10 @@ const ImportCourse = ({ onImportComplete }: ImportCourseProps) => {
         if (entry && entry.isDirectory) {
           try {
             // Get the path from Electron (this requires custom handling)
-            const path = (e.dataTransfer.items[i].getAsFile() as any).path;
-            await importCourse(path);
+            const file = e.dataTransfer.items[i].getAsFile() as File & { path?: string };
+            if (file?.path) {
+              await importCourse(file.path);
+            }
             break;
           } catch (err) {
             console.error("Failed to import dropped folder:", err);
@@ -346,9 +351,10 @@ const ImportCourse = ({ onImportComplete }: ImportCourseProps) => {
       setTimeout(() => {
         navigate(`/course/${courseId}`);
       }, 1500);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to import course:", err);
-      setError(`Failed to import course: ${err.message}`);
+      const message = err instanceof Error ? err.message : "Unknown error";
+      setError(`Failed to import course: ${message}`);
       setImporting(false);
     }
   };
@@ -391,48 +397,34 @@ const ImportCourse = ({ onImportComplete }: ImportCourseProps) => {
         </div>
       )}
 
-      {importing ? (
-        <div className="import-progress">
-          <h3>{progress.status}</h3>
-          <div className="progress-bar">
-            <div
-              className="progress-fill"
-              style={{ width: `${progress.percent}%` }}
-            ></div>
-          </div>
-        </div>
-      ) : (
-        <>
-          <div
-            className={`drop-zone ${dragging ? "dragging" : ""}`}
-            onDragEnter={handleDragEnter}
-            onDragLeave={handleDragLeave}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-          >
-            <div className="drop-icon">📁</div>
-            <p>Drag and drop a course folder here</p>
-            <p className="drop-subtitle">or</p>
-            <button className="select-folder-btn" onClick={handleSelectFolder}>
-              Select Folder
-            </button>
-          </div>
+      <div
+        className={`drop-zone ${dragging ? "dragging" : ""}`}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
+        <div className="drop-icon">📁</div>
+        <p>Drag and drop a course folder here</p>
+        <p className="drop-subtitle">or</p>
+        <button className="select-folder-btn" onClick={handleSelectFolder}>
+          Select Folder
+        </button>
+      </div>
 
-          <div className="import-tips">
-            <h3>Tips for best results:</h3>
-            <ul>
-              <li>Choose the main course folder that contains all sections</li>
-              <li>
-                Make sure video files have extensions like .mp4, .mkv, or .webm
-              </li>
-              <li>
-                Subtitle files should be in the same folder as their videos
-              </li>
-              <li>Folders are typically organized by sections and lectures</li>
-            </ul>
-          </div>
-        </>
-      )}
+      <div className="import-tips">
+        <h3>Tips for best results:</h3>
+        <ul>
+          <li>Choose the main course folder that contains all sections</li>
+          <li>
+            Make sure video files have extensions like .mp4, .mkv, or .webm
+          </li>
+          <li>
+            Subtitle files should be in the same folder as their videos
+          </li>
+          <li>Folders are typically organized by sections and lectures</li>
+        </ul>
+      </div>
     </div>
   );
 };

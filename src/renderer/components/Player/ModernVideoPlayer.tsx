@@ -17,7 +17,12 @@ const ModernVideoPlayer = () => {
   const { lectureId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const routeState: Record<string, any> = location.state || {};
+  const routeState = (location.state || {}) as {
+    maintainFullscreen?: boolean;
+    filePath?: string;
+    videoUrl?: string;
+    startPosition?: number;
+  };
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -154,7 +159,7 @@ const ModernVideoPlayer = () => {
           try {
             await containerRef.current.requestFullscreen();
           } catch {
-            console.warn("Could not maintain fullscreen:");
+            // Fullscreen may be blocked by browser policy
           }
         }
 
@@ -260,8 +265,8 @@ const ModernVideoPlayer = () => {
       if (playerSettings.autoPlay && videoRef.current) {
         // Small delay to ensure position is restored first
         setTimeout(() => {
-          videoRef.current?.play().catch((err) => {
-            console.warn("Auto-play was prevented:", err);
+          videoRef.current?.play().catch(() => {
+            // Auto-play may be blocked by browser policy
           });
         }, 100);
       }
@@ -386,6 +391,14 @@ const ModernVideoPlayer = () => {
 
   return (
     <div className="modern-video-player-container">
+      <div className="player-top-bar">
+        <button
+          className="player-back-btn"
+          onClick={() => navigate(`/course/${lecture?.courseId}`)}
+        >
+          ← Back to Course
+        </button>
+      </div>
       <div className="modern-video-container" ref={containerRef}>
         <video
           ref={videoRef}
@@ -429,50 +442,37 @@ const ModernVideoPlayer = () => {
         )}
       </div>
 
-      <div className="player-content">
-        <div className="player-header-collapsed">
-          <h1 className="lecture-title-top">{lecture?.title}</h1>
-          <div className="course-header-row">
-            <div className="course-title">
-              <strong>Course:</strong> {course?.title}
-            </div>
-            <button
-              className="back-to-course-btn"
-              onClick={() => navigate(`/course/${lecture?.courseId}`)}
-            >
-              ← Back to Course
-            </button>
-          </div>
-        </div>
-
-        {/* Placeholder for lecture list and details to keep structure similar */}
-        <div className="player-body">
-          <div className="video-info">
-            <div className="video-info-section">
-              <h3>Status</h3>
-              <div
-                className={`completion-status ${lecture?.completed ? "completed" : "in-progress"}`}
-              >
+      <div className="pi-container">
+        <div className="pi-header">
+          <div className="pi-title-block">
+            <h1 className="pi-title">{lecture?.title}</h1>
+            <div className="pi-meta">
+              <span className="pi-course-name">{course?.title}</span>
+              <span className="pi-divider" />
+              <span className={`pi-status ${lecture?.completed ? "done" : ""}`}>
                 {lecture?.completed ? "Completed" : "In Progress"}
-              </div>
-            </div>
-
-            <div className="mini-course-view">
-              <h3>Up Next</h3>
-              <div className="mini-lectures-list">
-                {nearbyLectures.map((l) => (
-                  <div
-                    key={l.id}
-                    className={`mini-lecture-item ${l.id === lecture?.id ? "active" : ""}`}
-                    onClick={() => navigate(`/watch/${l.id}`)}
-                  >
-                    {l.title}
-                  </div>
-                ))}
-              </div>
+              </span>
             </div>
           </div>
         </div>
+
+        {nearbyLectures.length > 0 && (
+          <div className="pi-playlist">
+            <div className="pi-playlist-label">Nearby Lectures</div>
+            <div className="pi-playlist-items">
+              {nearbyLectures.map((l) => (
+                <div
+                  key={l.id}
+                  className={`pi-item ${l.id === lecture?.id ? "current" : ""}`}
+                  onClick={() => navigate(`/watch/${l.id}`)}
+                >
+                  <span className="pi-item-dot" />
+                  <span className="pi-item-title">{l.title}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

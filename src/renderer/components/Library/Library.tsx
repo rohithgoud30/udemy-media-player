@@ -107,7 +107,25 @@ const Library = ({ courses, loading, onDeleteCourse }: LibraryProps) => {
 const CourseCard = ({ course, progress, onDelete }: CourseCardProps) => {
   const progressPercentage = progress ? progress.completionPercentage : 0;
 
-  // Generate deterministic gradient based on course title
+  const getInitials = (name: string): string => {
+    // First try splitting on explicit separators
+    let words = name.split(/[\s_\-\.]+/).filter((w) => w.length > 0);
+
+    // If only one word, try camelCase splitting
+    if (words.length === 1) {
+      words = words[0]
+        .replace(/([a-z])([A-Z])/g, "$1 $2")
+        .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
+        .split(" ")
+        .filter((w) => w.length > 0);
+    }
+
+    return words
+      .slice(0, 3)
+      .map((w) => w.charAt(0).toUpperCase())
+      .join("");
+  };
+
   const getGradient = (name: string): string => {
     // 1. Generate a strong hash from the name
     let hash = 0;
@@ -136,9 +154,8 @@ const CourseCard = ({ course, progress, onDelete }: CourseCardProps) => {
   return (
     <div className="course-card">
       <div className="course-thumbnail">
-        {/* We'll use the first letter of the course as a placeholder */}
         <div className="thumbnail-placeholder" style={{ background: getGradient(course.title) }}>
-          {course.title.charAt(0).toUpperCase()}
+          {getInitials(course.title)}
         </div>
       </div>
 

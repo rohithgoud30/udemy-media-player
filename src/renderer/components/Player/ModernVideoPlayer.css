@@ -1,17 +1,48 @@
-/* ModernVideoPlayer.css */
+/* ModernVideoPlayer - macOS Native Style */
+
 .modern-video-player-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  min-height: 100vh;
   background-color: var(--bg-base);
-  overflow: hidden;
+}
+
+.player-top-bar {
+  display: flex;
+  align-items: center;
+  padding: var(--space-3) var(--space-5);
+  background: var(--bg-toolbar);
+  border-bottom: 1px solid var(--border-subtle);
+  -webkit-app-region: drag;
+  min-height: 44px;
+}
+
+.player-back-btn {
+  -webkit-app-region: no-drag;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.player-back-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
 }
 
 .modern-video-container {
   position: relative;
-  flex: 1;
-  min-height: 0;
   width: 100%;
+  aspect-ratio: 16 / 9;
   background-color: #000;
   display: flex;
   justify-content: center;
@@ -24,14 +55,14 @@
   object-fit: contain;
 }
 
-/* Video Controls Overlay */
+/* Video Controls Overlay - macOS vibrancy style */
 .video-controls {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
-  padding: var(--space-4);
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
+  padding: var(--space-3) var(--space-4);
   opacity: 0;
   transition: opacity var(--transition-normal);
   display: flex;
@@ -53,57 +84,63 @@
 .controls-right {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
 }
 
+/* Control Buttons - macOS rounded style */
 .control-btn {
   background: transparent;
   border: none;
-  color: white;
-  font-size: var(--text-lg);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: var(--text-base);
   cursor: pointer;
   padding: var(--space-2);
-  border-radius: var(--radius-sm);
-  transition: all var(--transition-fast);
+  border-radius: var(--radius-md);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
 }
 
 .control-btn:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-  color: var(--accent-400);
+  background-color: rgba(255, 255, 255, 0.12);
+  color: white;
 }
 
 .control-btn.active {
   color: var(--accent-400);
 }
 
+/* Time Display - macOS monospace style */
 .time-display {
-  color: var(--text-primary);
+  color: rgba(255, 255, 255, 0.7);
   font-family: var(--font-mono);
   font-size: var(--text-xs);
-  background-color: rgba(0, 0, 0, 0.6);
-  padding: 4px 8px;
+  padding: 3px 8px;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  margin-left: var(--space-4);
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.5px;
-  min-width: 100px;
+  letter-spacing: 0.3px;
+  min-width: 95px;
   text-align: center;
 }
 
+/* Speed Select - macOS dropdown style */
 .speed-select {
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.85);
+  padding: 3px 8px;
   border-radius: var(--radius-sm);
-  font-size: var(--text-sm);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
   cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.speed-select:hover {
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .speed-select:focus {
@@ -111,174 +148,178 @@
   border-color: var(--accent-400);
 }
 
-/* Player Content Below Video */
-.player-content {
-  padding: var(--space-3) var(--space-4);
-  max-width: 1400px;
+/* ==========================================================================
+   Player Info - Below Video
+   ========================================================================== */
+
+.pi-container {
+  max-width: 1200px;
   margin: 0 auto;
   width: 100%;
-  max-height: 160px;
-  overflow-y: auto;
+  padding: var(--space-5) var(--space-5) var(--space-8);
 }
 
-.player-header-collapsed {
+.pi-header {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-2);
-  border-bottom: 1px solid var(--border-subtle);
-  padding-bottom: var(--space-2);
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.lecture-title-top {
-  font-size: var(--text-xl);
-  color: var(--text-primary);
-  margin: 0;
-  flex: 1;
-}
-
-.course-header-row {
-  display: flex;
-  align-items: center;
   gap: var(--space-4);
+  margin-bottom: var(--space-5);
 }
 
-.course-title {
-  color: var(--text-secondary);
-  font-size: var(--text-sm);
-}
-
-.back-to-course-btn {
-  padding: var(--space-2) var(--space-4);
-  background-color: var(--bg-elevated);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  color: var(--text-secondary);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.back-to-course-btn:hover {
-  background-color: var(--bg-hover);
-  color: var(--text-primary);
-}
-
-/* Video Info / Sidebar */
-.player-body {
-  display: flex;
-  gap: var(--space-6);
-}
-
-.video-info {
+.pi-title-block {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
+  min-width: 0;
 }
 
-.video-info-section h3 {
-  font-size: var(--text-lg);
-  margin-bottom: var(--space-3);
+.pi-title {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
   color: var(--text-primary);
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+  margin: 0 0 var(--space-2) 0;
 }
 
-.completion-status {
-  display: inline-block;
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--radius-full);
+.pi-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.pi-course-name {
   font-size: var(--text-sm);
-  font-weight: 500;
+  color: var(--text-muted);
 }
 
-.completion-status.completed {
-  background-color: var(--success-muted);
-  color: var(--success);
-  border: 1px solid var(--success);
+.pi-divider {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  opacity: 0.5;
+  flex-shrink: 0;
 }
 
-.completion-status.in-progress {
-  background-color: var(--bg-hover);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-default);
-}
-
-.mini-course-view {
-  background-color: var(--bg-card);
+.pi-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  background: var(--bg-inset);
+  color: var(--text-muted);
   border: 1px solid var(--border-subtle);
+}
+
+.pi-status.done {
+  background: var(--success-muted);
+  color: var(--success);
+  border-color: rgba(52, 211, 153, 0.2);
+}
+
+/* Playlist */
+.pi-playlist {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
   padding: var(--space-4);
 }
 
-.mini-course-view h3 {
-  font-size: var(--text-base);
-  margin-bottom: var(--space-3);
-  color: var(--text-secondary);
+.pi-playlist-label {
+  font-size: 10px;
+  font-weight: var(--weight-semibold);
+  color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
+  margin-bottom: var(--space-3);
 }
 
-.mini-lectures-list {
+.pi-playlist-items {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 2px;
 }
 
-.mini-lecture-item {
+.pi-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
   cursor: pointer;
-  transition: background var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
 }
 
-.mini-lecture-item:hover {
-  background-color: var(--bg-hover);
+.pi-item:hover {
+  background: var(--bg-hover);
   color: var(--text-primary);
 }
 
-.mini-lecture-item.active {
-  background-color: var(--accent-600);
+.pi-item.current {
+  background: var(--accent-500);
   color: white;
 }
 
-/* Lecture Completion Toast - Simple green notification */
+.pi-item-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+
+.pi-item.current .pi-item-dot {
+  background: white;
+  opacity: 1;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
+}
+
+.pi-item-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Completion Toast - macOS Notification Style */
 .completion-toast {
   position: absolute;
   bottom: 80px;
   left: 50%;
   transform: translateX(-50%);
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: rgba(52, 211, 153, 0.95);
   color: white;
-  padding: var(--space-3) var(--space-5);
+  padding: var(--space-2) var(--space-5);
   border-radius: var(--radius-full);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   font-size: var(--text-sm);
   display: flex;
   align-items: center;
   gap: var(--space-2);
   z-index: 50;
-  animation: toastIn 0.4s ease, toastOut 0.4s ease 2.6s forwards;
-  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+  animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
+  box-shadow: var(--shadow-lg);
 }
 
 .completion-toast-icon {
-  width: 20px;
-  height: 20px;
-  background: rgba(255, 255, 255, 0.2);
+  width: 18px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.25);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 10px;
 }
 
 @keyframes toastIn {
   from {
-    transform: translateX(-50%) translateY(20px);
+    transform: translateX(-50%) translateY(16px);
     opacity: 0;
   }
   to {
@@ -293,42 +334,15 @@
     opacity: 1;
   }
   to {
-    transform: translateX(-50%) translateY(-20px);
+    transform: translateX(-50%) translateY(-16px);
     opacity: 0;
-  }
-}
-
-/* Small toast for other notifications */
-.notification {
-  position: absolute;
-  top: var(--space-4);
-  left: 50%;
-  transform: translateX(-50%);
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-full);
-  font-weight: 500;
-  font-size: var(--text-sm);
-  animation: slideDown 0.3s ease;
-  z-index: 100;
-  background-color: rgba(0, 0, 0, 0.8);
-  color: white;
-  backdrop-filter: blur(8px);
-}
-
-@keyframes slideDown {
-  from {
-    transform: translateX(-50%) translateY(-20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(-50%) translateY(0);
-    opacity: 1;
   }
 }
 
 /* ==========================================================================
    Progress Bar
    ========================================================================== */
+
 .progress-container {
   width: 100%;
   padding-bottom: var(--space-2);
@@ -341,20 +355,20 @@
 
 .video-progress-bar {
   width: 100%;
-  height: 4px;
-  background-color: rgba(255, 255, 255, 0.2);
+  height: 3px;
+  background-color: rgba(255, 255, 255, 0.15);
   border-radius: var(--radius-full);
   position: relative;
   transition: height var(--transition-fast);
 }
 
 .progress-container:hover .video-progress-bar {
-  height: 6px;
+  height: 5px;
 }
 
 .progress-filled {
   height: 100%;
-  background-color: var(--accent-500);
+  background: linear-gradient(90deg, var(--accent-500), var(--accent-400));
   border-radius: var(--radius-full);
   position: relative;
 }
@@ -367,14 +381,14 @@
   height: 12px;
   background-color: white;
   border-radius: 50%;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
   transition: opacity var(--transition-fast), transform var(--transition-fast);
   pointer-events: none;
 }
 
 .progress-container:hover .progress-thumb {
   opacity: 1 !important;
-  transform: translate(-50%, -50%) scale(1.2);
+  transform: translate(-50%, -50%) scale(1.15);
 }
 
 .progress-hover-thumb {
@@ -383,7 +397,7 @@
   transform: translate(-50%, -50%);
   width: 8px;
   height: 8px;
-  background-color: rgba(255, 255, 255, 0.5);
+  background-color: rgba(255, 255, 255, 0.4);
   border-radius: 50%;
   pointer-events: none;
 }

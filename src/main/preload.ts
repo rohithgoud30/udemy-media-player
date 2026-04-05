@@ -1,16 +1,21 @@
 import { contextBridge, ipcRenderer } from "electron";
 
+interface ScannedFile {
+  name: string;
+  path: string;
+  size: number;
+  mtime: Date;
+}
+
 interface ElectronAPI {
   selectDirectory: () => Promise<string | null>;
-  scanDirectory: (
-    dirPath: string
-  ) => Promise<{ files: any[]; basePath: string }>;
+  scanDirectory: (dirPath: string) => Promise<{ files: ScannedFile[]; basePath: string }>;
   checkFileExists: (filePath: string) => Promise<boolean>;
-  getSettings: () => Promise<any>;
-  saveSettings: (settings: any) => Promise<void>;
+  getSettings: () => Promise<Record<string, unknown>>;
+  saveSettings: (settings: Record<string, unknown>) => Promise<void>;
   getSrtFilePath: (videoFilePath: string) => string;
   readSrtFile: (srtFilePath: string) => Promise<string | null>;
-  invoke: (channel: string, ...args: any[]) => Promise<any>;
+  invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
 }
 
 export const checkFileExists = (filePath: string): Promise<boolean> => {
@@ -34,7 +39,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     return ipcRenderer.invoke("get-settings");
   },
 
-  saveSettings: (settings: any) => {
+  saveSettings: (settings: Record<string, unknown>) => {
     return ipcRenderer.invoke("save-settings", settings);
   },
 
@@ -70,12 +75,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
     const fs = require("fs").promises;
     try {
       return await fs.readFile(srtFilePath, "utf-8");
-    } catch (error) {
+    } catch {
       return null;
     }
   },
 
-  invoke: (channel: string, ...args: any[]) => {
+  invoke: (channel: string, ...args: unknown[]) => {
     const validChannels = [
       "select-directory",
       "scan-directory",

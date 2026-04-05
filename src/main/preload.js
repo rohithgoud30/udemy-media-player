@@ -51,7 +51,7 @@ electron_1.contextBridge.exposeInMainWorld("electronAPI", {
         try {
             return await fs.readFile(srtFilePath, "utf-8");
         }
-        catch (error) {
+        catch {
             return null;
         }
     },

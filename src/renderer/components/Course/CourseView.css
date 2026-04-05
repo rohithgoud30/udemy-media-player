@@ -1,363 +1,426 @@
+/* CourseView - macOS Native Course Browser */
+
 .course-view {
-  max-width: 1200px;
+  max-width: 960px;
   margin: 0 auto;
-  padding: var(--space-6);
-}
-
-.course-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--space-6);
-}
-
-.course-header h1 {
-  margin: 0;
-  font-size: var(--text-2xl);
-  color: var(--text-primary);
-}
-
-.back-button {
   padding: var(--space-2) var(--space-4);
-  background-color: var(--bg-elevated);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
+  animation: cvFadeIn 0.3s ease;
+}
+
+@keyframes cvFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Back Link */
+.cv-top-bar {
+  margin-bottom: var(--space-4);
+}
+
+.cv-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
   text-decoration: none;
-  color: var(--text-secondary);
-  font-weight: 500;
-  transition: all var(--transition-fast);
+  border-radius: var(--radius-md);
+  transition: color var(--transition-fast), background var(--transition-fast);
 }
 
-.back-button:hover {
-  background-color: var(--bg-hover);
+.cv-back-link:hover {
   color: var(--text-primary);
+  background: var(--bg-hover);
 }
 
-.course-progress {
-  margin-bottom: var(--space-8);
-  background: var(--bg-card);
+/* Hero / Course Header */
+.cv-hero {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
   padding: var(--space-6);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-subtle);
+  margin-bottom: var(--space-5);
 }
 
-.progress-container {
-  margin-top: var(--space-3);
+.cv-title {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  margin-bottom: var(--space-5);
 }
 
-.progress-bar {
-  height: 8px;
-  background-color: var(--bg-surface);
+/* Progress Bar */
+.cv-progress {
+  margin-bottom: var(--space-4);
+}
+
+.cv-progress-bar {
+  height: 6px;
+  background: var(--bg-inset);
   border-radius: var(--radius-full);
   overflow: hidden;
 }
 
-.progress-fill {
+.cv-progress-fill {
   height: 100%;
-  background-color: var(--primary-600);
-  transition: width 0.3s ease;
+  background: linear-gradient(90deg, var(--accent-600), var(--accent-400));
+  border-radius: var(--radius-full);
+  transition: width 0.4s ease;
+  position: relative;
 }
 
-.progress-stats {
+.cv-progress-fill::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 20px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2));
+  border-radius: var(--radius-full);
+}
+
+.cv-progress-label {
   display: flex;
-  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
   margin-top: var(--space-2);
-  font-size: var(--text-sm);
+}
+
+.cv-progress-pct {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--accent-400);
+  font-variant-numeric: tabular-nums;
+}
+
+.cv-progress-detail {
+  font-size: var(--text-xs);
   color: var(--text-muted);
 }
 
-.sections-container {
-  margin-bottom: var(--space-8);
-}
-
-.section {
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  margin-bottom: var(--space-4);
-  overflow: hidden;
-  background: var(--bg-card);
-}
-
-.section-header {
+/* Meta Row */
+.cv-meta-row {
   display: flex;
-  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.cv-meta-item {
+  display: flex;
   align-items: center;
-  padding: var(--space-4);
-  background-color: var(--bg-card);
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.cv-meta-item svg {
+  font-size: 10px;
+  opacity: 0.6;
+}
+
+/* Sections Container */
+.cv-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-bottom: var(--space-8);
+}
+
+/* Section Card */
+.cv-section {
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  background: var(--glass-bg);
+  overflow: hidden;
+  transition: border-color var(--transition-fast);
+}
+
+.cv-section:hover {
+  border-color: var(--border-default);
+}
+
+.cv-section.expanded {
+  border-color: var(--border-default);
+}
+
+/* Section Header */
+.cv-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
   cursor: pointer;
   transition: background var(--transition-fast);
+  gap: var(--space-4);
 }
 
-.section-header:hover {
-  background-color: var(--bg-hover);
+.cv-section-header:hover {
+  background: var(--bg-hover);
 }
 
-.section-title {
+.cv-section-left {
   display: flex;
   align-items: center;
-}
-
-.expand-icon {
-  margin-right: var(--space-3);
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.section-title h3 {
-  margin: 0;
-  font-size: var(--text-base);
-  color: var(--text-primary);
-}
-
-.section-meta {
-  font-size: var(--text-sm);
-  color: var(--text-muted);
-}
-
-.lectures-list {
-  padding: 0;
-  border-top: 1px solid var(--border-subtle);
-}
-
-.lecture {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--border-subtle);
-  transition: background var(--transition-fast);
-}
-
-.lecture:hover {
-  background-color: var(--bg-hover);
-}
-
-.lecture:last-child {
-  border-bottom: none;
-}
-
-.lecture-info {
-  display: flex;
-  align-items: center;
+  gap: var(--space-3);
   flex: 1;
-  overflow: hidden;
-  justify-content: space-between;
+  min-width: 0;
 }
 
-.watch-toggle {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 2px solid var(--border-strong);
-  background-color: transparent;
-  margin-right: var(--space-4);
+.cv-section-chevron {
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  font-weight: bold;
-  color: white;
+  width: 20px;
+  height: 20px;
+  font-size: 10px;
+  color: var(--text-muted);
   flex-shrink: 0;
-  transition: all var(--transition-fast);
+  transition: color var(--transition-fast);
 }
 
-.watch-toggle:hover {
-  border-color: var(--primary-500);
+.cv-section.expanded .cv-section-chevron {
+  color: var(--accent-400);
 }
 
-.watch-toggle.watched {
-  background-color: var(--success);
-  border-color: var(--success);
+.cv-section-info {
+  min-width: 0;
 }
 
-.watch-toggle.partial {
-  background-color: var(--warning);
-  border-color: var(--warning);
+.cv-section-label {
+  display: block;
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: var(--weight-medium);
+  margin-bottom: 1px;
 }
 
-.lecture-title {
-  text-decoration: none;
+.cv-section-name {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
   color: var(--text-primary);
-  font-weight: 500;
+  margin: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex: 1;
-  font-size: var(--text-sm);
 }
 
-.lecture.watched .lecture-title {
-  color: var(--success);
-}
-
-.lecture.partial .lecture-title {
-  color: var(--warning);
-}
-
-.lecture-actions {
+.cv-section-right {
   display: flex;
   align-items: center;
-  margin-left: var(--space-4);
+  gap: var(--space-3);
   flex-shrink: 0;
-  gap: var(--space-2);
 }
 
-.resume-indicator {
+.cv-section-count {
   font-size: var(--text-xs);
-  color: var(--warning);
-  margin-right: var(--space-2);
+  font-weight: var(--weight-medium);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  background: var(--bg-inset);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
 }
 
-/* Enhanced Play/Resume Button Styles */
-.play-button {
+.cv-section-duration {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+/* Lectures List */
+.cv-lectures {
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Single Lecture Row */
+.cv-lecture {
+  display: flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-4);
+  gap: var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background var(--transition-fast);
+  min-height: 44px;
+}
+
+.cv-lecture:last-child {
+  border-bottom: none;
+}
+
+.cv-lecture:hover {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.cv-lecture.last-played {
+  background: rgba(139, 95, 248, 0.06);
+  border-left: 2px solid var(--accent-500);
+  padding-left: calc(var(--space-4) - 2px);
+}
+
+/* Checkbox */
+.cv-check {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--border-strong);
+  background: transparent;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-md);
-  text-decoration: none;
-  font-weight: 500;
-  transition: all var(--transition-fast);
-  min-width: 100px;
-  height: auto;
-  margin-left: var(--space-2);
-  font-size: var(--text-sm);
+  flex-shrink: 0;
+  font-size: 9px;
+  color: transparent;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+  padding: 0;
 }
 
-.play-button.resume {
-  background-color: var(--warning) !important;
-  color: white !important;
-  border: none;
+.cv-check:hover {
+  border-color: var(--accent-400);
 }
 
-.play-button:not(.resume) {
-  background-color: var(--primary-600);
+.cv-check.checked {
+  background: var(--success);
+  border-color: var(--success);
   color: white;
 }
 
-.play-button:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
-  background-color: var(--primary-500);
+.cv-check.partial {
+  border-color: var(--warning);
 }
 
-.play-button .play-icon,
-.play-button .resume-icon {
-  margin-right: var(--space-2);
-  font-size: 14px;
-}
-
-.play-button .play-text,
-.play-button .resume-text {
-  font-size: var(--text-sm);
-  white-space: nowrap;
-}
-
-.play-button.resume .resume-text {
-  font-size: var(--text-xs);
-  font-weight: bold;
-}
-
-.mark-as-completed {
-  display: block;
-  margin: var(--space-6) auto;
-  padding: var(--space-2) var(--space-4);
-  background-color: var(--bg-surface);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-size: var(--text-sm);
-  transition: all var(--transition-fast);
-}
-
-.mark-as-completed:hover {
-  background-color: var(--bg-hover);
-  color: var(--text-primary);
-  border-color: var(--border-strong);
-}
-
-.course-total-duration {
-  margin-top: var(--space-2);
-  font-size: var(--text-sm);
-  color: var(--text-muted);
-  text-align: center;
-}
-
-.section-duration {
-  margin-left: var(--space-2);
-  font-size: var(--text-sm);
-  color: var(--text-muted);
-}
-
-.lecture-duration {
-  margin-left: 0;
-  margin-right: 0;
-  font-size: var(--text-xs);
-  color: var(--text-muted);
-  font-weight: normal;
-  padding: 2px 6px;
-  background-color: var(--bg-elevated);
-  border-radius: var(--radius-sm);
+/* Lecture Body */
+.cv-lecture-body {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
+  gap: var(--space-2);
+}
+
+.cv-lecture-title {
+  text-decoration: none;
+  color: var(--text-primary);
+  font-size: var(--text-sm);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color var(--transition-fast);
+  line-height: 1.4;
+}
+
+.cv-lecture-title:hover {
+  color: var(--accent-400);
+}
+
+.cv-lecture.watched .cv-lecture-title {
+  color: var(--text-muted);
+}
+
+.cv-lecture-num {
+  color: var(--text-muted);
+  margin-right: var(--space-1);
+  font-variant-numeric: tabular-nums;
+}
+
+.cv-now-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  background: linear-gradient(135deg, var(--accent-500), var(--accent-600));
+  color: white;
+  border-radius: var(--radius-full);
+  font-size: 9px;
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+  line-height: 16px;
+}
+
+/* Lecture Right */
+.cv-lecture-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
   flex-shrink: 0;
 }
 
-.course-actions {
-  display: flex;
-  gap: var(--space-2);
+.cv-lecture-dur {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  min-width: 36px;
+  text-align: right;
+}
+
+/* Play Button */
+.cv-play {
+  display: inline-flex;
   align-items: center;
-}
-
-.lecture.last-played {
-  background-color: rgba(99, 102, 241, 0.1); /* Keep slight tint or use var */
-  border-left: 3px solid var(--primary-500);
-  padding-left: calc(var(--space-4) - 3px);
-}
-
-.last-played-badge {
-  display: inline-block;
-  margin-left: var(--space-2);
-  padding: 2px 6px;
-  background-color: var(--primary-500);
+  gap: var(--space-1);
+  padding: 4px 14px;
+  border-radius: var(--radius-full);
+  text-decoration: none;
+  font-weight: var(--weight-medium);
+  font-size: var(--text-xs);
+  transition: background-color var(--transition-fast), transform var(--transition-fast);
+  background: var(--accent-500);
   color: white;
-  border-radius: var(--radius-sm);
-  font-size: 10px;
-  font-weight: bold;
+  min-width: 72px;
+  justify-content: center;
 }
 
-/* Enhanced Responsive Design for Course View */
+.cv-play svg {
+  font-size: 9px;
+}
 
-/* Large Desktop */
+.cv-play:hover {
+  background: var(--accent-600);
+  color: white;
+  transform: scale(1.03);
+}
+
+.cv-play.resume {
+  background: var(--warning);
+  color: var(--bg-base);
+}
+
+.cv-play.resume:hover {
+  background: #e5a500;
+  color: var(--bg-base);
+}
+
+/* Responsive */
 @media (min-width: 1200px) {
   .course-view {
-    max-width: 1400px;
-    padding: var(--space-6) var(--space-8);
+    max-width: 1060px;
   }
-
-  /* ... similar adjustments using vars ... */
-  /* Keeping media queries simple for now, relying on fluid vars where possible */
 }
 
-/* ... Other media queries generally inherit the variable changes ... */
-/* Simplified for maintenance, assuming global spacing vars handle most scaling */
 @media (max-width: 768px) {
-  .course-header {
-    flex-direction: column;
-    align-items: flex-start;
+  .cv-hero {
+    padding: var(--space-4);
   }
 
-  .lecture {
-    flex-direction: column;
-    align-items: flex-start;
+  .cv-title {
+    font-size: var(--text-xl);
   }
 
-  .lecture-actions {
-    margin-left: 0;
+  .cv-lecture {
+    flex-wrap: wrap;
+  }
+
+  .cv-lecture-right {
     width: 100%;
-    justify-content: space-between;
-    margin-top: var(--space-2);
+    justify-content: flex-end;
+    margin-top: var(--space-1);
+    padding-left: calc(20px + var(--space-3));
   }
 }
