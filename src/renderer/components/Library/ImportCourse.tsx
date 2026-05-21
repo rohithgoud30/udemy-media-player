@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import FileScanner from "../../../js/fileScanner";
 import { CourseManager } from "../../../js/database";
 
@@ -213,7 +213,7 @@ const ImportCourse = ({ onImportComplete }: ImportCourseProps) => {
 
       // Navigate to the course view
       setTimeout(() => {
-        navigate(`/course/${courseId}`);
+        navigate({ to: "/course/$courseId", params: { courseId: String(courseId) } });
       }, 1500);
     } catch (err: unknown) {
       console.error("Error importing course from files:", err);
@@ -349,7 +349,7 @@ const ImportCourse = ({ onImportComplete }: ImportCourseProps) => {
 
       // Navigate to the course view
       setTimeout(() => {
-        navigate(`/course/${courseId}`);
+        navigate({ to: "/course/$courseId", params: { courseId: String(courseId) } });
       }, 1500);
     } catch (err: unknown) {
       console.error("Failed to import course:", err);

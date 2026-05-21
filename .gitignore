@@ -74,6 +74,9 @@ dist_electron/
 build/
 releases/
 
+# TanStack Router generated tree
+src/renderer/routeTree.gen.ts
+
 # VS Code files
 .vscode/*
 !.vscode/settings.json

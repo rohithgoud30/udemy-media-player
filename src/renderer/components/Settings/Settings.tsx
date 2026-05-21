@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "@tanstack/react-router";
 import "./Settings.css";
 import SettingsManager, { DEFAULT_SETTINGS } from "../../utils/settingsManager";
 
 const Settings: React.FC = () => {
-  const navigate = useNavigate();
+  const router = useRouter();
 
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [isLoading, setIsLoading] = useState(true);
@@ -173,7 +173,7 @@ const Settings: React.FC = () => {
         <button className="reset-button" onClick={resetDefaults}>
           Reset to Defaults
         </button>
-        <button className="cancel-button" onClick={() => navigate(-1)}>
+        <button className="cancel-button" onClick={() => router.history.back()}>
           Cancel
         </button>
       </div>

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useParams, useRouter } from "@tanstack/react-router";
 import "./ModernVideoPlayer.css";
 import { CourseManager, ProgressManager } from "../../../js/database";
 import db from "../../../js/database";
@@ -14,8 +14,9 @@ import { useSubtitles } from "../../hooks/useSubtitles";
 import VideoControls from "./VideoControls";
 
 const ModernVideoPlayer = () => {
-  const { lectureId } = useParams();
+  const { lectureId } = useParams({ from: "/watch/$lectureId" });
   const navigate = useNavigate();
+  const router = useRouter();
   const location = useLocation();
   const routeState = (location.state || {}) as {
     maintainFullscreen?: boolean;
@@ -136,7 +137,9 @@ const ModernVideoPlayer = () => {
           const wasInFullscreen = !!document.fullscreenElement;
 
           setLoading(true);
-          navigate(`/watch/${targetLecture.id}`, {
+          navigate({
+            to: "/watch/$lectureId",
+            params: { lectureId: String(targetLecture.id) },
             state: { ...routeState, maintainFullscreen: wasInFullscreen },
           });
         }
@@ -385,7 +388,7 @@ const ModernVideoPlayer = () => {
       <div className="error-container">
         <h2>Error</h2>
         <p>{error}</p>
-        <button onClick={() => navigate(-1)}>Go Back</button>
+        <button onClick={() => router.history.back()}>Go Back</button>
       </div>
     );
 
@@ -394,7 +397,13 @@ const ModernVideoPlayer = () => {
       <div className="player-top-bar">
         <button
           className="player-back-btn"
-          onClick={() => navigate(`/course/${lecture?.courseId}`)}
+          onClick={() =>
+            lecture?.courseId !== undefined &&
+            navigate({
+              to: "/course/$courseId",
+              params: { courseId: String(lecture.courseId) },
+            })
+          }
         >
           ← Back to Course
         </button>
@@ -464,7 +473,12 @@ const ModernVideoPlayer = () => {
                 <div
                   key={l.id}
                   className={`pi-item ${l.id === lecture?.id ? "current" : ""}`}
-                  onClick={() => navigate(`/watch/${l.id}`)}
+                  onClick={() =>
+                    navigate({
+                      to: "/watch/$lectureId",
+                      params: { lectureId: String(l.id) },
+                    })
+                  }
                 >
                   <span className="pi-item-dot" />
                   <span className="pi-item-title">{l.title}</span>

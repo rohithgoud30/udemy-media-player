@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { CourseManager, ProgressManager } from "../../../js/database";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -20,7 +20,7 @@ interface CourseProgressBarProps {
 }
 
 const CourseView = () => {
-  const { courseId } = useParams();
+  const { courseId } = useParams({ from: "/_app/course/$courseId" });
   const navigate = useNavigate();
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
@@ -155,7 +155,7 @@ const CourseView = () => {
       <div className="error-container">
         <h2>Error</h2>
         <p>{error}</p>
-        <button onClick={() => navigate("/")}>Back to Library</button>
+        <button onClick={() => navigate({ to: "/" })}>Back to Library</button>
       </div>
     );
   }
@@ -261,7 +261,8 @@ const CourseView = () => {
 
                         <div className="cv-lecture-body">
                           <Link
-                            to={`/watch/${lecture.id}`}
+                            to="/watch/$lectureId"
+                            params={{ lectureId: String(lecture.id) }}
                             className="cv-lecture-title"
                             title={lecture.title}
                           >
@@ -280,7 +281,8 @@ const CourseView = () => {
                             </span>
                           )}
                           <Link
-                            to={`/watch/${lecture.id}`}
+                            to="/watch/$lectureId"
+                            params={{ lectureId: String(lecture.id) }}
                             className={`cv-play ${hasResume ? "resume" : ""}`}
                             title={
                               hasResume

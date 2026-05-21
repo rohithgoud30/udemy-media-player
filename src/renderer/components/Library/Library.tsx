@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { ProgressManager } from "../../../js/database";
 
 interface LibraryProps {
@@ -174,7 +174,11 @@ const CourseCard = ({ course, progress, onDelete }: CourseCardProps) => {
         <div className="progress-text">{progressPercentage}% Complete</div>
 
         <div className="course-actions">
-          <Link to={`/course/${course.id}`} className="view-button">
+          <Link
+            to="/course/$courseId"
+            params={{ courseId: String(course.id) }}
+            className="view-button"
+          >
             View Course
           </Link>
           <button onClick={onDelete} className="delete-button">
